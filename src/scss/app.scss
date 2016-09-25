@@ -37,3 +37,19 @@ $sky4: #141111;
   bottom: -10%;
   left: 0;
 }
+
+#bflat {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  width: 90vw;
+  height: 22.5vw;
+  margin-left: -45vw;
+  margin-top: -11.25vw;
+  opacity: 0.6;
+
+  path,
+  rect {
+    fill: $white;
+  }
+}
