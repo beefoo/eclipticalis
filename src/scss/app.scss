@@ -1,6 +1,7 @@
 @import "mixins";
 @import "variables";
 @import "normalize";
+@import "animations";
 
 html {
   font-family: Helvetica, Arial, sans-serif;
@@ -10,9 +11,16 @@ html {
 }
 
 body {
-
+  color: $lightGray;
 }
 
+a {
+  &, &:link, &:visited, &:hover, &:active {
+    color: $lightGray;
+  }
+}
+
+// Backdrop: sky and trees
 $sky1: #181f20;
 $sky2: #211f16;
 $sky3: #201712;
@@ -31,25 +39,46 @@ $sky4: #141111;
   background: linear-gradient(to bottom, $sky1 0%, $sky2 70%, $sky3 85%, $sky4 100%);
   filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='$sky1', endColorstr='$sky4',GradientType=0 );
 }
-
 #trees {
   position: absolute;
   bottom: -10%;
   left: 0;
 }
 
+// B-flat bar staff
+$bflatW: 70vw;
+$bflatH: $bflatW / 4;
+$bflatX: $bflatW / -2;
+$bflatY: $bflatH / -2;
 #bflat {
   position: absolute;
   top: 40%;
   left: 50%;
-  width: 90vw;
-  height: 22.5vw;
-  margin-left: -45vw;
-  margin-top: -11.25vw;
-  opacity: 0.6;
+  width: $bflatW;
+  height: $bflatH;
+  margin-left: $bflatX;
+  margin-top: $bflatY;
+  // opacity: 0.8;
+  -webkit-filter: drop-shadow(0px 0px 12px rgba($lightGray, 0.5));
+          filter: drop-shadow(0px 0px 12px rgba($lightGray, 0.5));
+  @include animation(fadeIn 8s);
 
   path,
   rect {
-    fill: $white;
+    fill: $lightGray;
   }
+}
+
+// Menu
+.menu {
+  position: absolute;
+  bottom: 20px;
+  left: 24px;
+  font-size: 1.1rem;
+  letter-spacing: 0.05rem;
+
+  &, a {
+    color: $gray;
+  }
+
 }
