@@ -23,7 +23,7 @@ a {
 // Backdrop: sky and trees
 $sky1: #181f20;
 $sky2: #211f16;
-$sky3: #201712;
+$sky3: lighten(#201712, 5%);
 $sky4: #141111;
 .container {
   width: 100%;
@@ -43,6 +43,14 @@ $sky4: #141111;
   position: absolute;
   bottom: -10%;
   left: 0;
+}
+#stars {
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  position: absolute;
+  overflow: hidden;
 }
 
 // B-flat bar staff

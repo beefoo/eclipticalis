@@ -12,7 +12,11 @@
 </head>
 <body>
 
-  <div id="main" class="container">
+  <div class="container">
+
+    <div id="stars">
+
+    </div>
 
     <svg version="1.1" id="bflat" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
        viewBox="0 0 1200 300" style="enable-background:new 0 0 1200 300;" xml:space="preserve">
@@ -212,6 +216,26 @@
 
   </div>
 
+  <script type="x-shader/x-vertex" id="vertexshader">
+    attribute float size;
+    attribute vec3 customColor;
+    varying vec3 vColor;
+    void main() {
+      vColor = customColor;
+      vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+      gl_PointSize = size * ( 300.0 / -mvPosition.z );
+      gl_Position = projectionMatrix * mvPosition;
+    }
+  </script>
+  <script type="x-shader/x-fragment" id="fragmentshader">
+    uniform vec3 color;
+    uniform sampler2D texture;
+    varying vec3 vColor;
+    void main() {
+      gl_FragColor = vec4( color * vColor, 1.0 );
+      gl_FragColor = gl_FragColor * texture2D( texture, gl_PointCoord );
+    }
+  </script>
   <script src="js/app.js"></script>
 
 </body>
