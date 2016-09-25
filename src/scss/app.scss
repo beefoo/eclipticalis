@@ -32,6 +32,7 @@ $sky4: #141111;
   left: 0;
   position: absolute;
   overflow: hidden;
+  cursor: move;
 
   background: #181f20;
   background: -moz-linear-gradient(top, $sky1 0%, $sky2 70%, $sky3 85%, $sky4 100%);
