@@ -13,12 +13,27 @@ body {
 
 }
 
+$sky1: #181f20;
+$sky2: #211f16;
+$sky3: #201712;
+$sky4: #141111;
 .container {
   width: 100%;
   height: 100%;
-  background: $black;
   top: 0;
   left: 0;
   position: absolute;
   overflow: hidden;
+
+  background: #181f20;
+  background: -moz-linear-gradient(top, $sky1 0%, $sky2 70%, $sky3 85%, $sky4 100%);
+  background: -webkit-linear-gradient(top, $sky1 0%, $sky2 70%, $sky3 85%, $sky4 100%);
+  background: linear-gradient(to bottom, $sky1 0%, $sky2 70%, $sky3 85%, $sky4 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='$sky1', endColorstr='$sky4',GradientType=0 );
+}
+
+#trees {
+  position: absolute;
+  bottom: -10%;
+  left: 0;
 }
