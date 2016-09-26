@@ -915,6 +915,7 @@ var App = (function() {
     this.beta = this.opt.betaAngleRange[0]; // angle from x to y (controlled by pan y)
     var vector3 = UTIL.vector3(this.alpha, this.beta, this.opt.radius);
     this.target = new THREE.Vector3(vector3[0], vector3[1], vector3[2]);
+    this.viewChanged = true;
 
     this.loadStars();
     this.loadListeners();
@@ -1043,6 +1044,8 @@ var App = (function() {
 
     this.camera = camera;
     this.renderer = renderer;
+
+    console.log(new Date());
   };
 
   App.prototype.onResize = function(){
@@ -1062,17 +1065,21 @@ var App = (function() {
     var beta = this.beta - degreesY;
     this.alpha = alpha;
     this.beta = UTIL.lim(beta, this.opt.betaAngleRange[0], this.opt.betaAngleRange[1]);
+    this.viewChanged = true;
   };
 
   App.prototype.render = function(){
     var _this = this;
 
-    var vector3 = UTIL.vector3(this.alpha, this.beta, this.opt.radius);
-    this.target.x = vector3[0];
-    this.target.y = vector3[1];
-    this.target.z = vector3[2];
+    if (this.viewChanged) {
+      var vector3 = UTIL.vector3(this.alpha, this.beta, this.opt.radius);
+      this.target.x = vector3[0];
+      this.target.y = vector3[1];
+      this.target.z = vector3[2];
+      this.camera.lookAt(this.target);
+      this.viewChanged = false;
+    }
 
-    this.camera.lookAt(this.target);
     this.renderer.render(this.scene, this.camera);
 
     requestAnimationFrame(function(){
