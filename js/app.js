@@ -853,6 +853,37 @@ loadTextureCube:function(a,b,c,d){console.warn("THREE.ImageUtils.loadTextureCube
 h.Projector=function(){console.error("THREE.Projector has been moved to /examples/js/renderers/Projector.js.");this.projectVector=function(a,b){console.warn("THREE.Projector: .projectVector() is now vector.project().");a.project(b)};this.unprojectVector=function(a,b){console.warn("THREE.Projector: .unprojectVector() is now vector.unproject().");a.unproject(b)};this.pickingRay=function(a,b){console.error("THREE.Projector: .pickingRay() is now raycaster.setFromCamera().")}};h.CanvasRenderer=function(){console.error("THREE.CanvasRenderer has been moved to /examples/js/renderers/CanvasRenderer.js");
 this.domElement=document.createElementNS("http://www.w3.org/1999/xhtml","canvas");this.clear=function(){};this.render=function(){};this.setClearColor=function(){};this.setSize=function(){}};Object.defineProperty(h,"__esModule",{value:!0})});
 
+// Utility functions
+(function() {
+  window.UTIL = {};
+
+  UTIL.lim = function(num, min, max) {
+    if (num < min) return min;
+    if (num > max) return max;
+    return num;
+  };
+
+  UTIL.normDegrees = function(degrees){
+    degrees = degrees % 360;
+    if (degrees < 0) degrees += 360;
+    return degrees;
+  };
+
+  UTIL.rad = function(degrees) {
+    return degrees * (Math.PI / 180);
+  };
+
+  UTIL.vector3 = function(alpha, beta, length) {
+    alpha = UTIL.rad(alpha);
+    beta = UTIL.rad(beta);
+    var x = length * Math.cos(alpha) * Math.cos(beta);
+    var z = length * Math.sin(alpha) * Math.cos(beta);
+    var y = length * Math.sin(beta);
+    return [x, y, z];
+  };
+
+})();
+
 var CONFIG = {};
 
 
@@ -863,10 +894,12 @@ var App = (function() {
       fov: 40,
       near: 1,
       far: 10000,
-      posZ: 0,
       color: 0xffffff,
       texture: "img/star.png",
-      radius: 200
+      radius: 200,
+      pixelsPerDegree: 10, // how much pan pixels move camera in degrees
+      alphaAngleRange: [0, 360], // angle from x to z (controlled by pan x)
+      betaAngleRange: [0, 75] // angle from x to y (controlled by pan y)
     };
     this.opt = _.extend({}, defaults, options);
     this.init();
@@ -877,7 +910,11 @@ var App = (function() {
     this.containerW = this.$container.width();
     this.containerH = this.$container.height();
 
-    this.target = new THREE.Vector3(this.opt.radius, this.opt.radius, this.opt.radius);
+    // determine where to look at initially
+    this.alpha = this.opt.alphaAngleRange[0]; // angle from x to z (controlled by pan x)
+    this.beta = this.opt.betaAngleRange[0]; // angle from x to y (controlled by pan y)
+    var vector3 = UTIL.vector3(this.alpha, this.beta, this.opt.radius);
+    this.target = new THREE.Vector3(vector3[0], vector3[1], vector3[2]);
 
     this.loadStars();
     this.loadListeners();
@@ -960,13 +997,18 @@ var App = (function() {
       var cr = 255, cg = 255, cb = 255;
       var size = 200;
       if (i==1) {
-        px = radius;
-        py = radius;
-        pz = radius;
-        cg = 0;
-        cb = 0;
+        px = radius; py = radius; pz = radius;
+        cg = 0; cb = 0;
 
-      } else if (i > 1) {
+      } else if (i==2) {
+        px = radius; py = radius;
+        cr = 0; cb = 0;
+
+      } else if (i==3) {
+        px = radius;
+        cg = 0; cr = 0;
+
+      } else if (i > 3) {
         px = ( Math.random() * 2 - 1 ) * radius;
         py = ( Math.random() * 2 - 1 ) * radius;
         pz = ( Math.random() * 2 - 1 ) * radius;
@@ -1013,15 +1055,24 @@ var App = (function() {
   };
 
   App.prototype.onPanMove = function(dx, dy){
-    this.target.x += dx;
-    this.target.y += dy;
+    var ppd = this.opt.pixelsPerDegree;
+    var degreesX = 1.0/(ppd/dx);
+    var degreesY = 1.0/(ppd/dy);
+    var alpha = this.alpha + degreesX;
+    var beta = this.beta - degreesY;
+    this.alpha = alpha;
+    this.beta = UTIL.lim(beta, this.opt.betaAngleRange[0], this.opt.betaAngleRange[1]);
   };
 
   App.prototype.render = function(){
     var _this = this;
 
-    this.camera.lookAt(this.target);
+    var vector3 = UTIL.vector3(this.alpha, this.beta, this.opt.radius);
+    this.target.x = vector3[0];
+    this.target.y = vector3[1];
+    this.target.z = vector3[2];
 
+    this.camera.lookAt(this.target);
     this.renderer.render(this.scene, this.camera);
 
     requestAnimationFrame(function(){
