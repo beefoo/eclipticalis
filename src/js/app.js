@@ -13,13 +13,15 @@ var App = (function() {
       container: '#stars',
       fov: 40,
       near: 1,
-      far: 10000,
+      far: 100000,
       color: 0xffffff,
       texture: "img/star.png",
       radius: 200,
       pixelsPerDegree: 10, // how much pan pixels move camera in degrees
       alphaAngleRange: [0, 360], // angle from x to z (controlled by pan x)
-      betaAngleRange: [0, 75] // angle from x to y (controlled by pan y)
+      betaAngleRange: [0, 75], // angle from x to y (controlled by pan y),
+      alphaStart: 0,
+      betaStart: 45
     };
     this.opt = _.extend({}, defaults, options);
     this.init();
@@ -31,8 +33,8 @@ var App = (function() {
     this.containerH = this.$container.height();
 
     // determine where to look at initially
-    this.alpha = this.opt.alphaAngleRange[0]; // angle from x to z (controlled by pan x)
-    this.beta = this.opt.betaAngleRange[0]; // angle from x to y (controlled by pan y)
+    this.alpha = this.opt.alphaStart; // angle from x to z (controlled by pan x)
+    this.beta = this.opt.betaStart; // angle from x to y (controlled by pan y)
     var vector3 = UTIL.vector3(this.alpha, this.beta, this.opt.radius);
     this.target = new THREE.Vector3(vector3[0], vector3[1], vector3[2]);
     this.viewChanged = true;
@@ -164,8 +166,6 @@ var App = (function() {
 
     this.camera = camera;
     this.renderer = renderer;
-
-    console.log(new Date());
   };
 
   App.prototype.onResize = function(){
