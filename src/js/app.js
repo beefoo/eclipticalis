@@ -12,16 +12,16 @@ var App = (function() {
       container: '#stars',
       dataUrl: 'data/stars.json',
       fov: 40,
-      near: 1,
+      near: 100,
       far: 100000,
       color: 0xffffff,
       texture: "img/star.png",
-      radius: 200,
       pixelsPerDegree: 10, // how much pan pixels move camera in degrees
       alphaAngleRange: [0, 360], // angle from x to z (controlled by pan x)
-      betaAngleRange: [-30, 30], // angle from x to y (controlled by pan y),
+      betaAngleRange: [-15, 10], // angle from x to y (controlled by pan y),
       alphaStart: 0,
-      betaStart: 45
+      betaStart: -2.5,
+      starSize: 5
     };
     this.opt = $.extend({}, defaults, options);
     this.init();
@@ -35,8 +35,7 @@ var App = (function() {
     // determine where to look at initially
     this.alpha = this.opt.alphaStart; // angle from x to z (controlled by pan x)
     this.beta = this.opt.betaStart; // angle from x to y (controlled by pan y)
-    var vector3 = UTIL.vector3(this.alpha, this.beta, this.opt.radius);
-    this.target = new THREE.Vector3(vector3[0], vector3[1], vector3[2]);
+    this.target = new THREE.Vector3();
     this.viewChanged = true;
 
     this.loadStars();
@@ -126,35 +125,35 @@ var App = (function() {
       transparent:    true
     });
 
-    var radius = opt.radius;
     var geometry = new THREE.BufferGeometry();
     var positions = new Float32Array(stars.length* 3);
     var colors = new Float32Array(stars.length * 3);
     var sizes = new Float32Array(stars.length);
-
+    var size = this.opt.starSize;
     $.each(stars, function(i, star){
       positions[i*3] = star.x;
-      positions[i*3 + 1] = star.y;
-      positions[i*3 + 2] = star.z;
+      positions[i*3 + 1] = star.z;
+      positions[i*3 + 2] = star.y;
       colors[i*3] = star.r;
       colors[i*3 + 1] = star.g;
       colors[i*3 + 2] = star.b;
-      sizes[i] = 10;
+      sizes[i] = size;
     });
 
+    // build the scene
     geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.addAttribute('customColor', new THREE.BufferAttribute(colors, 3));
     geometry.addAttribute('size', new THREE.BufferAttribute(sizes, 1));
-
     var starSystem = new THREE.Points(geometry, shaderMaterial);
     this.scene.add(starSystem);
 
+    // load renderer
     var renderer = new THREE.WebGLRenderer({alpha: true});
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(w, h);
-
     this.$container.append(renderer.domElement);
 
+    // render & listen
     this.camera = camera;
     this.renderer = renderer;
     this.render();
@@ -185,7 +184,7 @@ var App = (function() {
     var _this = this;
 
     if (this.viewChanged) {
-      var vector3 = UTIL.vector3(this.alpha, this.beta, this.opt.radius);
+      var vector3 = UTIL.vector3(this.alpha, this.beta, this.opt.far);
       this.target.x = vector3[0];
       this.target.y = vector3[1];
       this.target.z = vector3[2];
