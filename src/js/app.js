@@ -1,7 +1,6 @@
 'use strict';
 
 //=include vendor/jquery-3.1.0.min.js
-//=include vendor/underscore-min.js
 //=include vendor/hammer.min.js
 //=include vendor/three.min.js
 //=include components/helpers.js
@@ -11,6 +10,7 @@ var App = (function() {
   function App(options) {
     var defaults = {
       container: '#stars',
+      dataUrl: 'data/stars.json',
       fov: 40,
       near: 1,
       far: 100000,
@@ -19,11 +19,11 @@ var App = (function() {
       radius: 200,
       pixelsPerDegree: 10, // how much pan pixels move camera in degrees
       alphaAngleRange: [0, 360], // angle from x to z (controlled by pan x)
-      betaAngleRange: [0, 75], // angle from x to y (controlled by pan y),
+      betaAngleRange: [-30, 30], // angle from x to y (controlled by pan y),
       alphaStart: 0,
       betaStart: 45
     };
-    this.opt = _.extend({}, defaults, options);
+    this.opt = $.extend({}, defaults, options);
     this.init();
   }
 
@@ -40,8 +40,6 @@ var App = (function() {
     this.viewChanged = true;
 
     this.loadStars();
-    this.loadListeners();
-    this.render();
   };
 
   App.prototype.loadListeners = function(){
@@ -80,6 +78,25 @@ var App = (function() {
 
   App.prototype.loadStars = function(){
     var _this = this;
+
+    $.getJSON(this.opt.dataUrl, function(data) {
+      var cols = data.cols;
+      var rows = data.rows;
+      console.log('Loaded '+rows.length+' stars.')
+      var stars = [];
+      $.each(rows, function(i, row){
+        var star = {};
+        $.each(cols, function(j, col){
+          star[col] = row[j];
+        });
+        stars.push(star);
+      });
+      _this.onLoadStarData(stars);
+    });
+  };
+
+  App.prototype.onLoadStarData = function(stars){
+    var _this = this;
     var opt = this.opt;
     var w = this.containerW;
     var h = this.containerH;
@@ -108,48 +125,22 @@ var App = (function() {
       depthTest:      false,
       transparent:    true
     });
-    var particles = 1000;
+
     var radius = opt.radius;
     var geometry = new THREE.BufferGeometry();
-    var positions = new Float32Array(particles* 3);
-    var colors = new Float32Array(particles * 3);
-    var sizes = new Float32Array((particles));
-    var color = new THREE.Color();
-    for ( var i = 0, i3 = 0; i < particles; i ++, i3 += 3 ) {
-      var px = 0, py = 0, pz = 0;
-      var cr = 255, cg = 255, cb = 255;
-      var size = 200;
-      if (i==1) {
-        px = radius; py = radius; pz = radius;
-        cg = 0; cb = 0;
+    var positions = new Float32Array(stars.length* 3);
+    var colors = new Float32Array(stars.length * 3);
+    var sizes = new Float32Array(stars.length);
 
-      } else if (i==2) {
-        px = radius; py = radius;
-        cr = 0; cb = 0;
-
-      } else if (i==3) {
-        px = radius;
-        cg = 0; cr = 0;
-
-      } else if (i > 3) {
-        px = ( Math.random() * 2 - 1 ) * radius;
-        py = ( Math.random() * 2 - 1 ) * radius;
-        pz = ( Math.random() * 2 - 1 ) * radius;
-        color.setHSL(i / particles, 0.2, 0.7);
-        cr = color.r;
-        cg = color.g;
-        cb = color.b;
-        size = 20;
-      }
-
-      positions[ i3 + 0 ] = px;
-      positions[ i3 + 1 ] = py;
-      positions[ i3 + 2 ] = pz;
-      colors[ i3 + 0 ] = cr;
-      colors[ i3 + 1 ] = cg;
-      colors[ i3 + 2 ] = cb;
-      sizes[ i ] = size;
-    }
+    $.each(stars, function(i, star){
+      positions[i*3] = star.x;
+      positions[i*3 + 1] = star.y;
+      positions[i*3 + 2] = star.z;
+      colors[i*3] = star.r;
+      colors[i*3 + 1] = star.g;
+      colors[i*3 + 2] = star.b;
+      sizes[i] = 10;
+    });
 
     geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.addAttribute('customColor', new THREE.BufferAttribute(colors, 3));
@@ -166,6 +157,8 @@ var App = (function() {
 
     this.camera = camera;
     this.renderer = renderer;
+    this.render();
+    this.loadListeners();
   };
 
   App.prototype.onResize = function(){

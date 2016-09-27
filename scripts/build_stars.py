@@ -6,6 +6,7 @@
 #   python build_stars.py
 
 import argparse
+import colorsys
 import csv
 import json
 import os
@@ -18,13 +19,22 @@ parser.add_argument('-of', dest="OUTPUT_FILE", default="../data/stars.json", hel
 parser.add_argument('-d0', dest="MIN_DECLINATION", default="-30", type=float, help="Minumum declination")
 parser.add_argument('-d1', dest="MAX_DECLINATION", default="30", type=float, help="Maximum declination")
 parser.add_argument('-c', dest="COUNT", default="10000", type=int, help="Number of most visible stars to retrieve")
-
+parser.add_argument('-sa', dest="SATURATION", default="0.2", type=float, help="Color saturation of stars")
+parser.add_argument('-ml', dest="MIN_LUM", default="0.2", type=float, help="Minumum luminence of stars")
 
 # init input
 args = parser.parse_args()
 
+def lerp(a, b, percent):
+    return (1.0*b - a) * percent + a
+
 def norm(value, a, b):
     return (1.0*value - a) / (b - a)
+
+def ciToHue(ci):
+    h0 = 0.6
+    h1 = 0
+    return lerp(h0, h1, ci)
 
 stars = []
 cols = [
@@ -71,6 +81,7 @@ stars = stars[:args.COUNT]
 
 print "Normalizing data..."
 rows = []
+s = args.SATURATION
 for star in stars:
     x = round(star['x'],2)
     y = round(star['y'],2)
@@ -78,11 +89,17 @@ for star in stars:
     mag = round(norm(star['mag'], min(stats['mag']), max(stats['mag'])),2)
     lum = round(norm(star['lum'], min(stats['lum']), max(stats['lum'])),2)
     ci = round(norm(star['ci'], min(stats['ci']), max(stats['ci'])),2)
-    rows.append([x, y, z, mag, lum, ci])
+    l = max([args.MIN_LUM, lum])
+    h = ciToHue(ci)
+    (r, g, b) = colorsys.hls_to_rgb(h, l, s)
+    r = round(r,2)
+    g = round(g,2)
+    b = round(b,2)
+    rows.append([x, y, z, mag, r, g, b])
 
 print "Writing %s stars to file %s" % (len(rows), args.OUTPUT_FILE)
 with open(args.OUTPUT_FILE, 'w') as f:
     json.dump({
-        'cols': ['x','y','z','mag','lum','ci'],
+        'cols': ['x','y','z','m','r','g','b'],
         'rows': rows
     }, f)
