@@ -51,6 +51,8 @@ def getSize(x, y, z):
     size = 2
     if m < 10:
         size = 1
+    if m < 5:
+        size = 0.5
     if m > 20:
         size = 3
     if m > 40:
@@ -135,7 +137,7 @@ for si, star in enumerate(stars):
     y = round(star['y'], 2)
     z = round(star['z'], 2)
     size = getSize(x, y, z)
-    # mag = round(norm(star['mag'], max(stats['mag']), min(stats['mag'])),2)
+    mag = round(norm(star['mag'], max(stats['mag']), min(stats['mag'])),2)
     lum = round(norm(star['lum'], min(stats['lum']), max(stats['lum'])),2)
     ci = round(norm(star['ci'], min(stats['ci']), max(stats['ci'])),2)
     l = max([args.MIN_LUM, lum])
@@ -149,7 +151,7 @@ for si, star in enumerate(stars):
     r = round(r,2)
     g = round(g,2)
     b = round(b,2)
-    rows.append([x, y, z, r, g, b, size])
+    rows.append([x, y, z, r, g, b, size, mag])
     sys.stdout.write('\r')
     sys.stdout.write(str(int(1.0*si/starCount*100))+'%')
     sys.stdout.flush()
@@ -157,6 +159,6 @@ for si, star in enumerate(stars):
 print "Writing %s stars to file %s" % (len(rows), args.OUTPUT_FILE)
 with open(args.OUTPUT_FILE, 'w') as f:
     json.dump({
-        'cols': ['x','y','z','r','g','b','s'],
+        'cols': ['x','y','z','r','g','b','s','m'],
         'rows': rows
     }, f)
