@@ -12,16 +12,16 @@ var App = (function() {
       container: '#stars',
       dataUrl: 'data/stars.json',
       fov: 40,
-      near: 100,
-      far: 100000,
+      near: 1,
+      far: 1000,
       color: 0xffffff,
-      texture: "img/star.png",
+      texture: "img/star3.png",
       pixelsPerDegree: 10, // how much pan pixels move camera in degrees
       alphaAngleRange: [0, 360], // angle from x to z (controlled by pan x)
       betaAngleRange: [-15, 10], // angle from x to y (controlled by pan y),
       alphaStart: 0,
       betaStart: -2.5,
-      starSize: 5
+      starSize: 1
     };
     this.opt = $.extend({}, defaults, options);
     this.init();
