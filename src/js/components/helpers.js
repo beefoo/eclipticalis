@@ -8,6 +8,15 @@
     return num;
   };
 
+  UTIL.mean = function(arr){
+    var len = arr.length;
+    var sum = 0;
+    for(var i=0; i<len; i++) {
+      sum += arr[i];
+    }
+    return sum / len;
+  };
+
   UTIL.normDegrees = function(degrees){
     degrees = degrees % 360;
     if (degrees < 0) degrees += 360;

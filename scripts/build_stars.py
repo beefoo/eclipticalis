@@ -46,6 +46,21 @@ def normSigned(value, a, b):
     n = norm(value, a, b)
     return n * 2.0 - 1;
 
+def getSize(x, y, z):
+    m = mean([abs(x), abs(y), abs(z)])
+    size = 2
+    if m < 10:
+        size = 1
+    if m > 20:
+        size = 3
+    if m > 40:
+        size = 4
+    if m > 50:
+        size = 5
+    if m > 100:
+        size = size + int(m/100)
+    return size
+
 def ciToHue(ci):
     redHue = 1.0
     blueHue = 0.583
@@ -119,6 +134,7 @@ for si, star in enumerate(stars):
     x = round(star['x'], 2)
     y = round(star['y'], 2)
     z = round(star['z'], 2)
+    size = getSize(x, y, z)
     # mag = round(norm(star['mag'], max(stats['mag']), min(stats['mag'])),2)
     lum = round(norm(star['lum'], min(stats['lum']), max(stats['lum'])),2)
     ci = round(norm(star['ci'], min(stats['ci']), max(stats['ci'])),2)
@@ -133,7 +149,7 @@ for si, star in enumerate(stars):
     r = round(r,2)
     g = round(g,2)
     b = round(b,2)
-    rows.append([x, y, z, r, g, b])
+    rows.append([x, y, z, r, g, b, size])
     sys.stdout.write('\r')
     sys.stdout.write(str(int(1.0*si/starCount*100))+'%')
     sys.stdout.flush()
@@ -141,6 +157,6 @@ for si, star in enumerate(stars):
 print "Writing %s stars to file %s" % (len(rows), args.OUTPUT_FILE)
 with open(args.OUTPUT_FILE, 'w') as f:
     json.dump({
-        'cols': ['x','y','z','r','g','b'],
+        'cols': ['x','y','z','r','g','b','s'],
         'rows': rows
     }, f)

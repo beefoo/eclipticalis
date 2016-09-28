@@ -861,6 +861,15 @@ this.domElement=document.createElementNS("http://www.w3.org/1999/xhtml","canvas"
     return num;
   };
 
+  UTIL.mean = function(arr){
+    var len = arr.length;
+    var sum = 0;
+    for(var i=0; i<len; i++) {
+      sum += arr[i];
+    }
+    return sum / len;
+  };
+
   UTIL.normDegrees = function(degrees){
     degrees = degrees % 360;
     if (degrees < 0) degrees += 360;
@@ -899,8 +908,7 @@ var App = (function() {
       alphaAngleRange: [0, 360], // angle from x to z (controlled by pan x)
       betaAngleRange: [-15, 10], // angle from x to y (controlled by pan y),
       alphaStart: 0,
-      betaStart: -2.5,
-      starSize: 1
+      betaStart: -2.5
     };
     this.opt = $.extend({}, defaults, options);
     this.init();
@@ -1016,7 +1024,7 @@ var App = (function() {
       colors[i*3] = star.r;
       colors[i*3 + 1] = star.g;
       colors[i*3 + 2] = star.b;
-      sizes[i] = size;
+      sizes[i] = star.s;
     });
 
     // build the scene

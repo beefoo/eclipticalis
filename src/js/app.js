@@ -20,8 +20,7 @@ var App = (function() {
       alphaAngleRange: [0, 360], // angle from x to z (controlled by pan x)
       betaAngleRange: [-15, 10], // angle from x to y (controlled by pan y),
       alphaStart: 0,
-      betaStart: -2.5,
-      starSize: 1
+      betaStart: -2.5
     };
     this.opt = $.extend({}, defaults, options);
     this.init();
@@ -137,7 +136,7 @@ var App = (function() {
       colors[i*3] = star.r;
       colors[i*3 + 1] = star.g;
       colors[i*3 + 2] = star.b;
-      sizes[i] = size;
+      sizes[i] = star.s;
     });
 
     // build the scene
