@@ -2,6 +2,14 @@
 (function() {
   window.UTIL = {};
 
+  UTIL.diffVector3 = function(p1, p2) {
+    return [p2[0]-p1[0], p2[1]-p1[1], p2[2]-p1[2]];
+  };
+
+  UTIL.dotProduct3 = function(a, b) {
+    return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+  }
+
   UTIL.lim = function(num, min, max) {
     if (num < min) return min;
     if (num > max) return max;
@@ -22,7 +30,7 @@
     if (degrees < 0) degrees += 360;
     return degrees;
   };
-
+  
   UTIL.rad = function(degrees) {
     return degrees * (Math.PI / 180);
   };

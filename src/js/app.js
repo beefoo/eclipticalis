@@ -3,7 +3,7 @@
 //=include vendor/jquery-3.1.0.min.js
 //=include vendor/hammer.min.js
 //=include vendor/three.min.js
-//=include components/helpers.js
+//=include helpers.js
 //=include config.js
 
 var App = (function() {
@@ -11,7 +11,7 @@ var App = (function() {
     var defaults = {
       container: '#stars',
       dataUrl: 'data/stars.json',
-      fov: 40,
+      fov: 30,
       near: 1,
       far: 1000,
       color: 0xffffff,
@@ -20,7 +20,10 @@ var App = (function() {
       alphaAngleRange: [0, 360], // angle from x to z (controlled by pan x)
       betaAngleRange: [-15, 10], // angle from x to y (controlled by pan y),
       alphaStart: 0,
-      betaStart: -2.5
+      betaStart: -2.5,
+      maxActive: 24,
+      bbAlpha: 15,
+      bbBeta: 5
     };
     this.opt = $.extend({}, defaults, options);
     this.init();
@@ -35,9 +38,37 @@ var App = (function() {
     this.alpha = this.opt.alphaStart; // angle from x to z (controlled by pan x)
     this.beta = this.opt.betaStart; // angle from x to y (controlled by pan y)
     this.target = new THREE.Vector3();
+    this.origin = new THREE.Vector3(0, 0, 0);
     this.viewChanged = true;
 
+    this.activeStars = [];
     this.loadStars();
+  };
+
+  App.prototype.getBoundingBox = function(){
+    var bbAlpha = this.opt.bbAlpha;
+    var bbBeta = this.opt.bbBeta;
+    var tl = UTIL.vector3(this.alpha - bbAlpha, this.beta + bbBeta, 10);
+    var br = UTIL.vector3(this.alpha + bbAlpha, this.beta - bbBeta, 10);
+    var min = new THREE.Vector3(tl[0], tl[1], tl[2]);
+    var max = new THREE.Vector3(br[0], br[1], br[2]);
+    return new Box3(min, max);
+  };
+
+  App.prototype.drawBoundingBoxGuide = function(){
+    var bbAlpha = this.opt.bbAlpha;
+    var bbBeta = this.opt.bbBeta;
+    var tl = UTIL.vector3(this.alpha - bbAlpha, this.beta + bbBeta, 10);
+    var tr = UTIL.vector3(this.alpha + bbAlpha, this.beta + bbBeta, 10);
+    var bl = UTIL.vector3(this.alpha - bbAlpha, this.beta - bbBeta, 10);
+    var br = UTIL.vector3(this.alpha + bbAlpha, this.beta - bbBeta, 10);
+    var geometry = new THREE.Geometry();
+    geometry.vertices.push(
+      new THREE.Vector3(tl[0], tl[1], tl[2]),
+      new THREE.Vector3(tr[0], tr[1], tr[2]),
+      new THREE.Vector3(bl[0], bl[1], bl[2]),
+      new THREE.Vector3(br[0], br[1], br[2])
+    );
   };
 
   App.prototype.loadListeners = function(){
@@ -68,7 +99,7 @@ var App = (function() {
 
     // pan end
     h.on('panend', function(e){
-
+      _this.onPanEnd();
     });
 
     $(window).on('resize', function(){ _this.onResize(); });
@@ -76,11 +107,13 @@ var App = (function() {
 
   App.prototype.loadStars = function(){
     var _this = this;
+    var starLen = 0;
 
     $.getJSON(this.opt.dataUrl, function(data) {
       var cols = data.cols;
       var rows = data.rows;
-      console.log('Loaded '+rows.length+' stars.')
+      starLen = rows.length;
+      console.log('Loaded '+_this.starLen+' stars.')
       var stars = [];
       $.each(rows, function(i, row){
         var star = {};
@@ -91,6 +124,9 @@ var App = (function() {
       });
       _this.onLoadStarData(stars);
     });
+
+    this.starLen = starLen;
+    this.starIndex = Array.apply(null, {length: starLen}).map(Number.call, Number);
   };
 
   App.prototype.onLoadStarData = function(stars){
@@ -123,7 +159,6 @@ var App = (function() {
       depthTest:      false,
       transparent:    true
     });
-
     var geometry = new THREE.BufferGeometry();
     var positions = new Float32Array(stars.length* 3);
     var colors = new Float32Array(stars.length * 3);
@@ -138,11 +173,13 @@ var App = (function() {
       colors[i*3 + 2] = star.b;
       sizes[i] = star.s;
     });
+    this.sizes = sizes;
+    // this.colors = colors;
 
     // build the scene
     geometry.addAttribute('position', new THREE.BufferAttribute(positions, 3));
     geometry.addAttribute('customColor', new THREE.BufferAttribute(colors, 3));
-    geometry.addAttribute('size', new THREE.BufferAttribute(sizes, 1));
+    geometry.addAttribute('size', new THREE.BufferAttribute(this.sizes, 1));
     var starSystem = new THREE.Points(geometry, shaderMaterial);
     this.scene.add(starSystem);
 
@@ -168,6 +205,20 @@ var App = (function() {
     this.renderer.setSize(this.containerW, this.containerH);
   };
 
+  App.prototype.onPanEnd = function(){
+    // find new active stars
+    // this.activeStars = [];
+    //
+    // var bbox = this.bbox;
+    // var origin = this.origin;
+    // // for each star
+    //   var ray = new THREE.Ray(origin,  new THREE.Vector3(0, 0, 0));
+    //   if (ray.intersectsBox(bbox)) {
+    //     // add to active
+    //     // break if max reached
+    //   }
+  };
+
   App.prototype.onPanMove = function(dx, dy){
     var ppd = this.opt.pixelsPerDegree;
     var degreesX = 1.0/(ppd/dx);
@@ -177,6 +228,10 @@ var App = (function() {
     this.alpha = alpha;
     this.beta = UTIL.lim(beta, this.opt.betaAngleRange[0], this.opt.betaAngleRange[1]);
     this.viewChanged = true;
+  };
+
+  App.prototype.onPanStart = function(){
+    // deactivate active stars
   };
 
   App.prototype.render = function(){

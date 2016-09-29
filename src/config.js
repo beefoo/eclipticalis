@@ -8,7 +8,7 @@ module.exports = {
     dest: publicAssets + '/js/',
     opt: {},
     src: [
-      sourceAssets + '/js/*.js'
+      sourceAssets + '/js/app.js'
     ]
   },
   sass: {

@@ -25,8 +25,8 @@ parser.add_argument('-m0', dest="MIN_MAGNITUDE", default="-1", type=float, help=
 parser.add_argument('-m1', dest="MAX_MAGNITUDE", default="6.5", type=float, help="Maximum visual magnitude of star")
 parser.add_argument('-mc', dest="MAX_COORD", default="800.0", type=float, help="Maximum abs value of cartesian coordinate of star")
 parser.add_argument('-fn', dest="FRUSTNUM_NEAR", default="10.0", type=float, help="Camera frustum near plane")
-parser.add_argument('-s0', dest="MIN_SIZE", default="0.8", type=float, help="Minumum size of star")
-parser.add_argument('-s1', dest="MAX_SIZE", default="24.0", type=float, help="Maximum size of star")
+parser.add_argument('-s0', dest="MIN_SIZE", default="0.9", type=float, help="Minumum size of star")
+parser.add_argument('-s1', dest="MAX_SIZE", default="27.0", type=float, help="Maximum size of star")
 
 # init input
 args = parser.parse_args()
