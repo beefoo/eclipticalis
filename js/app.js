@@ -982,6 +982,14 @@ var App = (function() {
     var bl = UTIL.vector3(this.alpha - arad + aoff, this.beta - brad + boff, 10);
     var br = UTIL.vector3(this.alpha + arad + aoff, this.beta - brad + boff, 10);
 
+
+    console.log(this.alpha - arad + aoff, this.alpha + arad + aoff);
+    // console.log(tl[0], tl[1], tl[2]);
+    // console.log(tr[0], tr[1], tr[2]);
+    // console.log(bl[0], bl[1], bl[2]);
+    // console.log(br[0], br[1], br[2]);
+    console.log('-----')
+
     return [
       new THREE.Vector3(tl[0], tl[1], tl[2]), new THREE.Vector3(tr[0], tr[1], tr[2]),
       new THREE.Vector3(tr[0], tr[1], tr[2]), new THREE.Vector3(br[0], br[1], br[2]),
