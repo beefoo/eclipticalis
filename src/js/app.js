@@ -22,8 +22,11 @@ var App = (function() {
       alphaStart: 0,
       betaStart: -2.5,
       maxActive: 24,
-      bbAlpha: 15,
-      bbBeta: 5
+      bbAlphaRadius: 15,
+      bbBetaRadius: 3,
+      bbAlphaOffset: 3,
+      bbBetaOffset: 3,
+      guides: true
     };
     this.opt = $.extend({}, defaults, options);
     this.init();
@@ -55,20 +58,44 @@ var App = (function() {
     return new Box3(min, max);
   };
 
-  App.prototype.drawBoundingBoxGuide = function(){
-    var bbAlpha = this.opt.bbAlpha;
-    var bbBeta = this.opt.bbBeta;
-    var tl = UTIL.vector3(this.alpha - bbAlpha, this.beta + bbBeta, 10);
-    var tr = UTIL.vector3(this.alpha + bbAlpha, this.beta + bbBeta, 10);
-    var bl = UTIL.vector3(this.alpha - bbAlpha, this.beta - bbBeta, 10);
-    var br = UTIL.vector3(this.alpha + bbAlpha, this.beta - bbBeta, 10);
+  App.prototype.guideDraw = function(){
     var geometry = new THREE.Geometry();
-    geometry.vertices.push(
-      new THREE.Vector3(tl[0], tl[1], tl[2]),
-      new THREE.Vector3(tr[0], tr[1], tr[2]),
-      new THREE.Vector3(bl[0], bl[1], bl[2]),
-      new THREE.Vector3(br[0], br[1], br[2])
-    );
+    var vertices = this.guideVertices();
+    geometry.vertices = vertices;
+    var material = new THREE.LineBasicMaterial({
+      color: 0xff0000
+    });
+    var bbox = new THREE.LineSegments(geometry, material);
+    this.guideGeo = geometry;
+    this.scene.add(bbox);
+  };
+
+  App.prototype.guideUpdate = function(){
+    var vertices = this.guideVertices();
+    for (var i=0; i<this.guideGeo.vertices.length; i++) {
+      this.guideGeo.vertices[i].x = vertices[i].x;
+      this.guideGeo.vertices[i].y = vertices[i].y;
+      this.guideGeo.vertices[i].z = vertices[i].z;
+    }
+    this.guideGeo.verticesNeedUpdate = true;
+  };
+
+  App.prototype.guideVertices = function(){
+    var arad = this.opt.bbAlphaRadius;
+    var brad = this.opt.bbBetaRadius;
+    var aoff = this.opt.bbAlphaOffset;
+    var boff = this.opt.bbBetaOffset;
+    var tl = UTIL.vector3(this.alpha - arad + aoff, this.beta + brad + boff, 10);
+    var tr = UTIL.vector3(this.alpha + arad + aoff, this.beta + brad + boff, 10);
+    var bl = UTIL.vector3(this.alpha - arad + aoff, this.beta - brad + boff, 10);
+    var br = UTIL.vector3(this.alpha + arad + aoff, this.beta - brad + boff, 10);
+
+    return [
+      new THREE.Vector3(tl[0], tl[1], tl[2]), new THREE.Vector3(tr[0], tr[1], tr[2]),
+      new THREE.Vector3(tr[0], tr[1], tr[2]), new THREE.Vector3(br[0], br[1], br[2]),
+      new THREE.Vector3(bl[0], bl[1], bl[2]), new THREE.Vector3(br[0], br[1], br[2]),
+      new THREE.Vector3(bl[0], bl[1], bl[2]), new THREE.Vector3(tl[0], tl[1], tl[2])
+    ];
   };
 
   App.prototype.loadListeners = function(){
@@ -113,7 +140,7 @@ var App = (function() {
       var cols = data.cols;
       var rows = data.rows;
       starLen = rows.length;
-      console.log('Loaded '+_this.starLen+' stars.')
+      console.log('Loaded '+starLen+' stars.')
       var stars = [];
       $.each(rows, function(i, row){
         var star = {};
@@ -189,6 +216,8 @@ var App = (function() {
     renderer.setSize(w, h);
     this.$container.append(renderer.domElement);
 
+    if (this.opt.guides) this.guideDraw();
+
     // render & listen
     this.camera = camera;
     this.renderer = renderer;
@@ -206,6 +235,7 @@ var App = (function() {
   };
 
   App.prototype.onPanEnd = function(){
+    if (this.opt.guides) this.guideUpdate();
     // find new active stars
     // this.activeStars = [];
     //
@@ -213,7 +243,8 @@ var App = (function() {
     // var origin = this.origin;
     // // for each star
     //   var ray = new THREE.Ray(origin,  new THREE.Vector3(0, 0, 0));
-    //   if (ray.intersectsBox(bbox)) {
+    //   var intersection = ray.intersectBox(bbox);
+    //   if (intersection) {
     //     // add to active
     //     // break if max reached
     //   }
