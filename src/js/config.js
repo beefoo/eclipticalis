@@ -1,1 +1,4 @@
-var CONFIG = {};
+var CONFIG = {
+  stars: {},
+  music: {}
+};
