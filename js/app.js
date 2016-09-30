@@ -917,7 +917,7 @@ var App = (function() {
       betaAngleRange: [-15, 10], // angle from x to y (controlled by pan y),
       alphaStart: 0,
       betaStart: -2.5,
-      maxActive: 24,
+      maxActive: 16,
       bbAlphaRadius: 15,
       bbBetaRadius: 3,
       bbAlphaOffset: 3,
@@ -945,13 +945,17 @@ var App = (function() {
   };
 
   App.prototype.getBoundingBox = function(){
-    var bbAlpha = this.opt.bbAlpha;
-    var bbBeta = this.opt.bbBeta;
-    var tl = UTIL.vector3(this.alpha - bbAlpha, this.beta + bbBeta, 10);
-    var br = UTIL.vector3(this.alpha + bbAlpha, this.beta - bbBeta, 10);
-    var min = new THREE.Vector3(tl[0], tl[1], tl[2]);
-    var max = new THREE.Vector3(br[0], br[1], br[2]);
-    return new Box3(min, max);
+    var arad = this.opt.bbAlphaRadius;
+    var brad = this.opt.bbBetaRadius;
+    var aoff = this.opt.bbAlphaOffset;
+    var boff = this.opt.bbBetaOffset;
+    var tl = UTIL.vector3(this.alpha - arad + aoff, this.beta + brad + boff, 10);
+    var br = UTIL.vector3(this.alpha + arad + aoff, this.beta - brad + boff, 10);
+    var minX = Math.min(tl[0], br[0]); var minY = Math.min(tl[1], br[1]); var minZ = Math.min(tl[2], br[2]);
+    var maxX = Math.max(tl[0], br[0]); var maxY = Math.max(tl[1], br[1]); var maxZ = Math.max(tl[2], br[2]);
+    var min = new THREE.Vector3(minX, minY, minZ);
+    var max = new THREE.Vector3(maxX, maxY, maxZ);
+    return new THREE.Box3(min, max);
   };
 
   App.prototype.guideDraw = function(){
@@ -1010,6 +1014,7 @@ var App = (function() {
     h.on('panstart', function(e){
       x0 = e.center.x;
       y0 = e.center.y;
+      _this.onPanStart();
     });
 
     // pan move
@@ -1097,7 +1102,9 @@ var App = (function() {
       colors[i*3 + 2] = star.b;
       sizes[i] = star.s;
     });
+    this.positions = positions;
     this.sizes = sizes;
+    this.originalSizes = sizes.slice();
     // this.colors = colors;
 
     // build the scene
@@ -1116,6 +1123,7 @@ var App = (function() {
     if (this.opt.guides) this.guideDraw();
 
     // render & listen
+    this.geometry = geometry;
     this.camera = camera;
     this.renderer = renderer;
     this.render();
@@ -1133,18 +1141,30 @@ var App = (function() {
 
   App.prototype.onPanEnd = function(){
     if (this.opt.guides) this.guideUpdate();
-    // find new active stars
-    // this.activeStars = [];
-    //
-    // var bbox = this.bbox;
-    // var origin = this.origin;
-    // // for each star
-    //   var ray = new THREE.Ray(origin,  new THREE.Vector3(0, 0, 0));
-    //   var intersection = ray.intersectBox(bbox);
-    //   if (intersection) {
-    //     // add to active
-    //     // break if max reached
-    //   }
+
+    var maxActive = this.opt.maxActive;
+    var bbox = this.getBoundingBox();
+    // console.log(bbox)
+    var origin = this.origin;
+    var positions = this.positions;
+    var triplesLen = parseInt(positions.length/3);
+    // for each star
+    for (var i=0; i<triplesLen; i++) {
+      var x = positions[i*3];
+      var y = positions[i*3+1];
+      var z = positions[i*3+2];
+      var ray = new THREE.Ray(origin,  new THREE.Vector3(x, y, z));
+      var intersection = ray.intersectBox(bbox);
+      if (intersection) {
+        this.activeStars.push(i);
+        this.sizes[i] = this.originalSizes[i] * 10;
+        if (this.activeStars.length >= maxActive) break;
+      }
+    }
+    if (this.activeStars.length) {
+      this.geometry.attributes.size.needsUpdate = true;
+    }
+
   };
 
   App.prototype.onPanMove = function(dx, dy){
@@ -1159,7 +1179,15 @@ var App = (function() {
   };
 
   App.prototype.onPanStart = function(){
+    if (!this.activeStars.length) return false;
+
     // deactivate active stars
+    for (var i=0; i<this.activeStars.length; i++){
+      var si = this.activeStars[i];
+      this.sizes[si] = this.originalSizes[si];
+    }
+    this.activeStars = [];
+    this.geometry.attributes.size.needsUpdate = true;
   };
 
   App.prototype.render = function(){
