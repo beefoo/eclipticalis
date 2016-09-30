@@ -45,23 +45,54 @@ $sky4: #141111;
   bottom: -10%;
   left: 0;
 }
-#stars {
-  width: 100%;
-  height: 100%;
-  top: 0;
+
+// Landscape: 1920:1080 aspect ratio
+$worldW: 100vw;
+$worldH: 1 / $aspectRatio * $worldW;
+$worldY: $worldH / 2;
+.world {
+  width: $worldW;
+  height: $worldH;
+  top: 50%;
   left: 0;
+  margin-left: 0;
+  margin-top: -$worldY;
   position: absolute;
   overflow: hidden;
 }
 
+// Portrait: maintain aspect ratio
+// $worldHP: 100vh;
+// $worldWP: $aspectRatio * $worldHP;
+// $worldX: $worldWP / 2;
+// @media (orientation: portrait) {
+//   .world {
+//     width: $worldWP;
+//     height: $worldHP;
+//     top: 0;
+//     left: 50%;
+//     margin-left: -$worldX;
+//     margin-top: 0;
+//   }
+// }
+
+#stars {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+}
+
 // B-flat bar staff
-$bflatW: 70vw;
-$bflatH: $bflatW / 4;
+$bflatP: 0.6;
+$bflatW: percentage($bflatP);
+$bflatH: percentage($aspectRatio / 4 * $bflatP);
 $bflatX: $bflatW / -2;
 $bflatY: $bflatH / -2;
 #bflat {
   position: absolute;
-  top: 40%;
+  top: 50%;
   left: 50%;
   width: $bflatW;
   height: $bflatH;
