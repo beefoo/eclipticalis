@@ -64,10 +64,7 @@ var Music = (function() {
   };
 
   Music.prototype.onStarsAligned = function(data){
-    var intersections = data.intersections;
-    var bbox = data.bbox;
-
-    console.log(intersections, bbox);
+    
   };
 
   Music.prototype.render = function(t){

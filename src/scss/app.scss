@@ -89,7 +89,8 @@ $worldY: $worldH / 2;
 //   }
 // }
 
-#stars {
+#stars,
+#canvas {
   position: absolute;
   width: 100%;
   height: 100%;
@@ -119,6 +120,36 @@ $bflatY: $bflatH / -2;
   path,
   rect {
     fill: $lightGray;
+  }
+}
+
+// Bounding box
+$bboxW: percentage(0.47);
+$bboxH: percentage(0.23);
+$bboxX: $bboxW / -2;
+$bboxY: $bboxH / -2;
+#bbox {
+  position: absolute;
+  top: 48.75%;
+  left: 54%;
+  width: $bboxW;
+  height: $bboxH;
+  margin-left: $bboxX;
+  margin-top: $bboxY;
+  @include box-sizing();
+
+  &.guide {
+    border: 1px solid red;
+  }
+
+  .star {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    margin-left: -1px;
+    margin-top: -1px;
+    background: red;
+    @include border-radius(50%);
   }
 }
 

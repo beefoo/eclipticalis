@@ -3,7 +3,8 @@
 var Stars = (function() {
   function Stars(options) {
     var defaults = {
-      container: '#stars',
+      container: '#canvas',
+      bbox: '#bbox',
       dataUrl: 'data/stars.json',
       fov: 30,
       near: 1,
@@ -16,21 +17,18 @@ var Stars = (function() {
       alphaStart: 0,
       betaStart: -2.5,
       maxActive: 16,
-      bbAlphaRadius: 12,
-      bbBetaRadius: 2,
-      bbAlphaOffset: 2,
-      bbBetaOffset: 3.2,
-      bbDistance: 100,
-      guides: true
+      guides: false
     };
     this.opt = $.extend({}, defaults, options);
     this.init();
   }
 
   Stars.prototype.init = function(){
+    // set dom elements
     this.$container = $(this.opt.container);
-    this.containerW = this.$container.width();
-    this.containerH = this.$container.height();
+    this.$bbox = $(this.opt.bbox);
+    if (this.opt.guides) this.$bbox.addClass('guide');
+    this.setCanvasValues();
 
     // determine where to look at initially
     this.alpha = this.opt.alphaStart; // angle from x to z (controlled by pan x)
@@ -43,61 +41,20 @@ var Stars = (function() {
     this.loadStars();
   };
 
-  Stars.prototype.getBoundingBox = function(){
-    var arad = this.opt.bbAlphaRadius;
-    var brad = this.opt.bbBetaRadius;
-    var aoff = this.opt.bbAlphaOffset;
-    var boff = this.opt.bbBetaOffset;
-    var bbd = this.opt.bbDistance;
-    var tl = UTIL.vector3(this.alpha - arad + aoff, this.beta + brad + boff, bbd);
-    var br = UTIL.vector3(this.alpha + arad + aoff, this.beta - brad + boff, bbd);
-    var minX = Math.min(tl[0], br[0]); var minY = Math.min(tl[1], br[1]); var minZ = Math.min(tl[2], br[2]);
-    var maxX = Math.max(tl[0], br[0]); var maxY = Math.max(tl[1], br[1]); var maxZ = Math.max(tl[2], br[2]);
-    var min = new THREE.Vector3(minX, minY, minZ);
-    var max = new THREE.Vector3(maxX, maxY, maxZ);
-    return new THREE.Box3(min, max);
-  };
+  Stars.prototype.drawStarGuides = function(points){
+    var $bbox = this.$bbox;
+    $bbox.empty();
 
-  Stars.prototype.guideDraw = function(){
-    var geometry = new THREE.Geometry();
-    var vertices = this.guideVertices();
-    geometry.vertices = vertices;
-    var material = new THREE.LineBasicMaterial({
-      color: 0xff0000
+    // console.log('Points: ', points);
+
+    $.each(points, function(i, point){
+      var $star = $('<div class="star"></div>');
+      $star.css({
+        left: (point.x * 100) + '%',
+        top: (point.y * 100) + '%'
+      });
+      $bbox.append($star);
     });
-    var bbox = new THREE.LineSegments(geometry, material);
-    bbox.frustumCulled = false;
-
-    this.guideGeo = geometry;
-    this.scene.add(bbox);
-  };
-
-  Stars.prototype.guideUpdate = function(){
-    var vertices = this.guideVertices();
-    for (var i=0; i<this.guideGeo.vertices.length; i++) {
-      this.guideGeo.vertices[i].x = vertices[i].x;
-      this.guideGeo.vertices[i].y = vertices[i].y;
-      this.guideGeo.vertices[i].z = vertices[i].z;
-    }
-    this.guideGeo.verticesNeedUpdate = true;
-  };
-
-  Stars.prototype.guideVertices = function(){
-    var arad = this.opt.bbAlphaRadius;
-    var brad = this.opt.bbBetaRadius;
-    var aoff = this.opt.bbAlphaOffset;
-    var boff = this.opt.bbBetaOffset;
-    var bbd = this.opt.bbDistance;
-    var tl = UTIL.vector3(this.alpha - arad + aoff, this.beta + brad + boff, bbd);
-    var tr = UTIL.vector3(this.alpha + arad + aoff, this.beta + brad + boff, bbd);
-    var bl = UTIL.vector3(this.alpha - arad + aoff, this.beta - brad + boff, bbd);
-    var br = UTIL.vector3(this.alpha + arad + aoff, this.beta - brad + boff, bbd);
-    return [
-      new THREE.Vector3(tl[0], tl[1], tl[2]), new THREE.Vector3(tr[0], tr[1], tr[2]),
-      new THREE.Vector3(tr[0], tr[1], tr[2]), new THREE.Vector3(br[0], br[1], br[2]),
-      new THREE.Vector3(bl[0], bl[1], bl[2]), new THREE.Vector3(br[0], br[1], br[2]),
-      new THREE.Vector3(bl[0], bl[1], bl[2]), new THREE.Vector3(tl[0], tl[1], tl[2])
-    ];
   };
 
   Stars.prototype.loadStars = function(){
@@ -167,6 +124,16 @@ var Stars = (function() {
       colors[i*3 + 1] = star.g;
       colors[i*3 + 2] = star.b;
       sizes[i] = star.s;
+      // // Guide
+      // if (i==0) {
+      //   positions[i*3] = 0;
+      //   positions[i*3 + 1] = 0;
+      //   positions[i*3 + 2] = 100;
+      //   colors[i*3] = 0;
+      //   colors[i*3 + 1] = 1;
+      //   colors[i*3 + 2] = 0;
+      //   sizes[i] = 100;
+      // }
     });
     this.positions = positions;
     this.sizes = sizes;
@@ -186,8 +153,6 @@ var Stars = (function() {
     renderer.setSize(w, h);
     this.$container.append(renderer.domElement);
 
-    if (this.opt.guides) this.guideDraw();
-
     // render & listen
     this.geometry = geometry;
     this.camera = camera;
@@ -197,8 +162,7 @@ var Stars = (function() {
   };
 
   Stars.prototype.onResize = function(){
-    this.containerW = this.$container.width();
-    this.containerH = this.$container.height();
+    this.setCanvasValues();
 
     this.camera.aspect = this.containerW / this.containerH;
     this.camera.updateProjectionMatrix();
@@ -206,35 +170,28 @@ var Stars = (function() {
   };
 
   Stars.prototype.onPanEnd = function(){
-    if (this.opt.guides) this.guideUpdate();
-
     var maxActive = this.opt.maxActive;
-    var bbox = this.getBoundingBox();
     // console.log(bbox)
     var origin = this.origin;
     var positions = this.positions;
     var triplesLen = parseInt(positions.length/3);
-    var intersections = [];
+    var pointsInBbox = [];
     // for each star
     for (var i=0; i<triplesLen; i++) {
       var x = positions[i*3];
       var y = positions[i*3+1];
       var z = positions[i*3+2];
-      var ray = new THREE.Ray(origin,  new THREE.Vector3(x, y, z));
-      var intersection = ray.intersectBox(bbox);
-      if (intersection) {
+      var point = this.pointInBbox(new THREE.Vector3(x, y, z));
+      if (point) {
         this.activeStars.push(i);
-        intersections.push(intersection);
+        pointsInBbox.push(point);
         this.sizes[i] = this.originalSizes[i] * 10;
         if (this.activeStars.length >= maxActive) break;
       }
     }
     if (this.activeStars.length) {
       this.geometry.attributes.size.needsUpdate = true;
-      $.publish('stars.aligned', {
-        intersections: intersections,
-        bbox: bbox
-      });
+      this.onStarsAligned(pointsInBbox);
     }
   };
 
@@ -261,6 +218,34 @@ var Stars = (function() {
     this.geometry.attributes.size.needsUpdate = true;
   };
 
+  Stars.prototype.onStarsAligned = function(pointsInBbox){
+    if (this.opt.guides) this.drawStarGuides(pointsInBbox);
+
+    // // guide
+    // var p = this.positions;
+    // var v3 = new THREE.Vector3(p[0], p[1], p[2]);
+    // var v2 = this._vector3ToScreen(v3);
+    // console.log(v2.x, v2.y, Math.round(v2.x/this.containerW*100), Math.round(v2.y/this.containerH*100));
+
+    $.publish('stars.aligned', {});
+  };
+
+  // get the relative point in the bbox; null if not in bbox
+  Stars.prototype.pointInBbox = function(vector3){
+    // object not in view
+    if (!this._vector3InFrustum(vector3)) return null;
+    var vector2 = this._vector3ToScreen(vector3);
+    var bbox2 = this.bbox;
+
+    var x = UTIL.norm(vector2.x, bbox2.min.x, bbox2.max.x);
+    var y = UTIL.norm(vector2.y, bbox2.min.y, bbox2.max.y);
+    if (x > 0 && x < 1 && y > 0 && y < 1) {
+      return { x: x, y: y }
+    } else {
+      return null;
+    }
+  };
+
   Stars.prototype.render = function(){
     var _this = this;
 
@@ -274,6 +259,48 @@ var Stars = (function() {
     }
 
     this.renderer.render(this.scene, this.camera);
+  };
+
+  Stars.prototype.setCanvasValues = function(){
+    this.containerW = this.$container.width();
+    this.containerH = this.$container.height();
+
+    var bbox = this.$bbox[0];
+    var x = bbox.offsetLeft;
+    var y = bbox.offsetTop;
+    var w = this.$bbox.width();
+    var h = this.$bbox.height();
+    var bboxMin = new THREE.Vector2(x, y);
+    var bboxMax = new THREE.Vector2(x+w, y+h);
+    this.bbox = new THREE.Box2(bboxMin, bboxMax);
+  };
+
+  // http://stackoverflow.com/questions/17624021
+  Stars.prototype._vector3InFrustum = function(vector3){
+    var frustum = new THREE.Frustum();
+    var cameraViewProjectionMatrix = new THREE.Matrix4();
+
+    this.camera.updateMatrixWorld();
+    this.camera.matrixWorldInverse.getInverse(this.camera.matrixWorld);
+    cameraViewProjectionMatrix.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
+    frustum.setFromMatrix(cameraViewProjectionMatrix);
+
+    return frustum.containsPoint(vector3);
+  };
+
+  // http://stackoverflow.com/questions/27409074
+  Stars.prototype._vector3ToScreen = function(vector3){
+    var wh = this.containerW / 2;
+    var hh = this.containerH / 2;
+
+    // map to normalized device coordinate (NDC) space
+    vector3.project(this.camera);
+
+    // map to 2D screen space
+    var x = (vector3.x * wh) + wh;
+    var y = (-vector3.y * hh) + hh;
+
+    return new THREE.Vector2(x, y);
   };
 
   return Stars;
