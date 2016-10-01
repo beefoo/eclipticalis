@@ -27,6 +27,8 @@ var Music = (function() {
 
   Music.prototype.init = function(){
     this.notes = [];
+    this.activeNotes = [];
+    this.queueReset = false;
     this.loadNotes();
     this.loadListeners();
   };
@@ -35,7 +37,7 @@ var Music = (function() {
     var _this = this;
 
     $.subscribe('stars.aligned', function(e, data){
-      _this.onStarsAligned(data);
+      _this.onStarsAligned(data.points);
     });
   };
 
@@ -63,12 +65,52 @@ var Music = (function() {
     }
   };
 
-  Music.prototype.onStarsAligned = function(data){
-    
+  Music.prototype.onPanStart = function(){
+    this.activeNotes = [];
   };
 
-  Music.prototype.render = function(t){
+  Music.prototype.onStarsAligned = function(points){
+    var notesCount = this.notesCount;
 
+    points = points.slice();
+    points = points.map(function(point){
+      point.played = false;
+      var y = Math.min(point.y, 0.99);
+      point.note = Math.floor(y * notesCount);
+      return point;
+    });
+    this.activeNotes = points;
+  };
+
+  Music.prototype.playNote = function(i){
+    this.notes[i].player.play();
+  };
+
+  Music.prototype.render = function(progress){
+    if (progress < 0) return false;
+    var activeNoteLen = this.activeNotes.length;
+
+    if (progress < 0.49 && this.queueReset) {
+      this.queueReset = false;
+      this.resetActiveNotes();
+    }
+
+    for (var i=0; i<activeNoteLen; i++){
+      var n = this.activeNotes[i];
+      if (!n.played && progress > n.start && progress < n.end) {
+        this.playNote(n.note);
+        this.activeNotes[i].played = true;
+        if (i >= (activeNoteLen-1)) {
+          this.queueReset = true;
+        }
+      }
+    }
+  };
+
+  Music.prototype.resetActiveNotes = function(){
+    for (var i=0; i<this.activeNotes.length; i++){
+      this.activeNotes[i].played = false;
+    }
   };
 
   return Music;

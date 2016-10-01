@@ -2,6 +2,10 @@
 (function() {
   window.UTIL = {};
 
+  UTIL.lerp = function(a, b, percent) {
+    return (1.0*b - a) * percent + a;
+  };
+
   UTIL.lim = function(num, min, max) {
     if (num < min) return min;
     if (num > max) return max;
@@ -29,6 +33,11 @@
 
   UTIL.rad = function(degrees) {
     return degrees * (Math.PI / 180);
+  };
+
+  UTIL.sin = function(progress) {
+    var radians = progress * Math.PI;
+    return Math.sin(radians);
   };
 
   UTIL.vector3 = function(alpha, beta, length) {

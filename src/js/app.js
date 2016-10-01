@@ -13,7 +13,8 @@
 var App = (function() {
   function App(options) {
     var defaults = {
-      container: '#main'
+      container: '#main',
+      barMs: 4000
     };
     this.opt = $.extend({}, defaults, options);
     this.init();
@@ -21,6 +22,8 @@ var App = (function() {
 
   App.prototype.init = function(){
     var _this = this;
+
+    this.seqStart = 0;
 
     // wait for stars and music to be loaded
     var starsLoaded = false;
@@ -75,6 +78,12 @@ var App = (function() {
 
     // resize
     $(window).on('resize', function(){ _this.onResize(); });
+
+    // stars aligned
+    $.subscribe('stars.aligned', function(e, data){
+      var t = new Date();
+      _this.seqStart = t.getTime();
+    });
   };
 
   App.prototype.onResize = function(){
@@ -91,6 +100,7 @@ var App = (function() {
 
   App.prototype.onPanStart = function(){
     this.stars.onPanStart();
+    this.music.onPanStart();
   };
 
   App.prototype.onReady = function(){
@@ -101,10 +111,19 @@ var App = (function() {
 
   App.prototype.render = function(){
     var _this = this;
-    var t = new Date();
 
-    this.stars.render(t);
-    this.music.render(t);
+    var progress = -1;
+    if (this.seqStart) {
+      var barMs = this.opt.barMs;
+      var t = new Date();
+      var ms = t.getTime();
+      var msSinceStart = ms - this.seqStart;
+      var remainder = msSinceStart % barMs;
+      progress = remainder / barMs;
+    }
+
+    this.stars.render(progress);
+    this.music.render(progress);
 
     requestAnimationFrame(function(){
       _this.render();

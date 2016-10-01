@@ -125,12 +125,12 @@ $bflatY: $bflatH / -2;
 
 // Bounding box
 $bboxW: percentage(0.47);
-$bboxH: percentage(0.23);
+$bboxH: percentage(0.21);
 $bboxX: $bboxW / -2;
 $bboxY: $bboxH / -2;
 #bbox {
   position: absolute;
-  top: 48.75%;
+  top: 48%;
   left: 54%;
   width: $bboxW;
   height: $bboxH;
@@ -140,6 +140,16 @@ $bboxY: $bboxH / -2;
 
   &.guide {
     border: 1px solid red;
+  }
+
+  .bar {
+    width: 100%;
+    height: percentage(1/11);
+    @include box-sizing();
+    border-bottom: 1px solid red;
+    &:first-child {
+      border-top: 1px solid red;
+    }
   }
 
   .star {

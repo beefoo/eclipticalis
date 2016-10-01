@@ -17,6 +17,8 @@ var Stars = (function() {
       alphaStart: 0,
       betaStart: -2.5,
       maxActive: 16,
+      flashDuration: 0.2,
+      flashMultiplier: 20,
       guides: false
     };
     this.opt = $.extend({}, defaults, options);
@@ -51,7 +53,7 @@ var Stars = (function() {
       var $star = $('<div class="star"></div>');
       $star.css({
         left: (point.x * 100) + '%',
-        top: (point.y * 100) + '%'
+        bottom: (point.y * 100) + '%'
       });
       $bbox.append($star);
     });
@@ -124,16 +126,6 @@ var Stars = (function() {
       colors[i*3 + 1] = star.g;
       colors[i*3 + 2] = star.b;
       sizes[i] = star.s;
-      // // Guide
-      // if (i==0) {
-      //   positions[i*3] = 0;
-      //   positions[i*3 + 1] = 0;
-      //   positions[i*3 + 2] = 100;
-      //   colors[i*3] = 0;
-      //   colors[i*3 + 1] = 1;
-      //   colors[i*3 + 2] = 0;
-      //   sizes[i] = 100;
-      // }
     });
     this.positions = positions;
     this.sizes = sizes;
@@ -159,6 +151,7 @@ var Stars = (function() {
     this.renderer = renderer;
 
     $.publish('stars.loaded', true);
+    setTimeout(function(){_this.onPanEnd();}, 1000);
   };
 
   Stars.prototype.onResize = function(){
@@ -183,13 +176,12 @@ var Stars = (function() {
       var z = positions[i*3+2];
       var point = this.pointInBbox(new THREE.Vector3(x, y, z));
       if (point) {
-        this.activeStars.push(i);
+        point.i = i;
         pointsInBbox.push(point);
-        this.sizes[i] = this.originalSizes[i] * 10;
-        if (this.activeStars.length >= maxActive) break;
+        if (pointsInBbox.length >= maxActive) break;
       }
     }
-    if (this.activeStars.length) {
+    if (pointsInBbox.length) {
       this.geometry.attributes.size.needsUpdate = true;
       this.onStarsAligned(pointsInBbox);
     }
@@ -211,23 +203,39 @@ var Stars = (function() {
 
     // deactivate active stars
     for (var i=0; i<this.activeStars.length; i++){
-      var si = this.activeStars[i];
+      var star = this.activeStars[i];
+      var si = star.i;
       this.sizes[si] = this.originalSizes[si];
     }
     this.activeStars = [];
     this.geometry.attributes.size.needsUpdate = true;
   };
 
-  Stars.prototype.onStarsAligned = function(pointsInBbox){
-    if (this.opt.guides) this.drawStarGuides(pointsInBbox);
+  Stars.prototype.onStarsAligned = function(points){
+    if (this.opt.guides) this.drawStarGuides(points);
 
-    // // guide
-    // var p = this.positions;
-    // var v3 = new THREE.Vector3(p[0], p[1], p[2]);
-    // var v2 = this._vector3ToScreen(v3);
-    // console.log(v2.x, v2.y, Math.round(v2.x/this.containerW*100), Math.round(v2.y/this.containerH*100));
+    // sort by x
+    points.sort(function(a, b){
+      if(a.x < b.x) return -1;
+      if(a.x > b.x) return 1;
+      return 0;
+    });
 
-    $.publish('stars.aligned', {});
+    // add start/end
+    var dur = this.opt.flashDuration;
+    points = points.map(function(point){
+       point.start = point.x * (1-dur);
+       point.end = point.start + dur;
+       point.end = Math.min(point.end, 1);
+      //  if (point.start > (1-dur)) {
+      //    point.start = (1-dur);
+      //    point.end = 1;
+      //  }
+       return point;
+    });
+    this.activeStars = points;
+
+    $.publish('stars.aligned', {points: points});
   };
 
   // get the relative point in the bbox; null if not in bbox
@@ -238,7 +246,7 @@ var Stars = (function() {
     var bbox2 = this.bbox;
 
     var x = UTIL.norm(vector2.x, bbox2.min.x, bbox2.max.x);
-    var y = UTIL.norm(vector2.y, bbox2.min.y, bbox2.max.y);
+    var y = 1.0 - UTIL.norm(vector2.y, bbox2.min.y, bbox2.max.y);
     if (x > 0 && x < 1 && y > 0 && y < 1) {
       return { x: x, y: y }
     } else {
@@ -246,7 +254,7 @@ var Stars = (function() {
     }
   };
 
-  Stars.prototype.render = function(){
+  Stars.prototype.render = function(progress){
     var _this = this;
 
     if (this.viewChanged) {
@@ -258,7 +266,32 @@ var Stars = (function() {
       this.viewChanged = false;
     }
 
+    if (this.activeStars.length && progress >= 0) {
+      this.renderStars(progress);
+    }
+
     this.renderer.render(this.scene, this.camera);
+  };
+
+  Stars.prototype.renderStars = function(progress){
+    var mult = this.opt.flashMultiplier;
+
+    for (var i=this.activeStars.length-1; i>=0; i--){
+      var star = this.activeStars[i];
+      var si = star.i;
+      // flashing star
+      if (progress > star.start && progress < star.end) {
+        var p = UTIL.norm(progress, star.start, star.end);
+        p = UTIL.sin(p);
+        var flashAmount = UTIL.lerp(1, mult, p);
+        this.sizes[si] = this.originalSizes[si] * flashAmount;
+      // not flashing
+      } else {
+        this.sizes[si] = this.originalSizes[si];
+      }
+    }
+
+    this.geometry.attributes.size.needsUpdate = true;
   };
 
   Stars.prototype.setCanvasValues = function(){
