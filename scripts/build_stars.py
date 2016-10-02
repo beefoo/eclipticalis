@@ -4,6 +4,7 @@
 # Data source: https://github.com/astronexus/HYG-Database via http://www.astronexus.com/hyg
 # Example usage:
 #   python build_stars.py
+#   python build_stars.py -of "../data/stars_guide.json"
 
 import argparse
 import colorsys
@@ -152,8 +153,17 @@ for si, star in enumerate(stars):
     # for showing north/south in color
     # if star['dec'] > 0:
     #     (r, g, b) = (0, 1, 0)
+    #     size = 30
     # else:
     #     (r, g, b) = (1, 0, 0)
+    #     size = 30
+    # for showing east/west in color
+    # if star['ra'] < 1 and star['ra'] > 0:
+    #     (r, g, b) = (0, 1, 0)
+    #     size = 30
+    # elif star['ra'] < 4 and star['ra'] > 3:
+    #     (r, g, b) = (1, 0, 0)
+    #     size = 30
     r = round(r,2)
     g = round(g,2)
     b = round(b,2)

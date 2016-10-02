@@ -2,6 +2,13 @@
 (function() {
   window.UTIL = {};
 
+  UTIL.degreesToTime = function(degrees) {
+    var d = UTIL.normDegrees(degrees);
+    var h = Math.floor(d / 15);
+    var m = Math.floor(d % 15 / 15 * 60);
+    return h + 'h ' + m + 'm';
+  };
+
   UTIL.lerp = function(a, b, percent) {
     return (1.0*b - a) * percent + a;
   };
@@ -33,6 +40,10 @@
 
   UTIL.rad = function(degrees) {
     return degrees * (Math.PI / 180);
+  };
+
+  UTIL.round = function(value, precision) {
+    return value.toFixed(precision);
   };
 
   UTIL.sin = function(progress) {

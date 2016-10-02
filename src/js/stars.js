@@ -13,7 +13,7 @@ var Stars = (function() {
       texture: "img/star3.png",
       pixelsPerDegree: 10, // how much pan pixels move camera in degrees
       alphaAngleRange: [0, 360], // angle from x to z (controlled by pan x)
-      betaAngleRange: [-15, 10], // angle from x to y (controlled by pan y),
+      betaAngleRange: [-15, 15], // angle from x to y (controlled by pan y),
       alphaStart: 0,
       betaStart: -2.5,
       maxActive: 16,
@@ -122,7 +122,7 @@ var Stars = (function() {
     $.each(stars, function(i, star){
       positions[i*3] = star.x;
       positions[i*3 + 1] = star.z;
-      positions[i*3 + 2] = star.y;
+      positions[i*3 + 2] = -star.y;
       colors[i*3] = star.r;
       colors[i*3 + 1] = star.g;
       colors[i*3 + 2] = star.b;
@@ -268,6 +268,7 @@ var Stars = (function() {
       this.target.y = vector3[1];
       this.target.z = vector3[2];
       this.camera.lookAt(this.target);
+      this.renderStatus();
       this.viewChanged = false;
     }
 
@@ -297,6 +298,14 @@ var Stars = (function() {
     }
 
     this.geometry.attributes.size.needsUpdate = true;
+  };
+
+  Stars.prototype.renderStatus = function(){
+    var ra = UTIL.degreesToTime(360 - this.alpha);
+    var dec = UTIL.round(this.beta, 1) + '°';
+    if (this.beta >= 0) dec = '+' + dec;
+    $('.ra').text(ra);
+    $('.dec').text(dec);
   };
 
   Stars.prototype.setCanvasValues = function(){

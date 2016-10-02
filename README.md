@@ -1,1 +1,1 @@
-# star-composition
+# Music Eclipticalis
