@@ -153,7 +153,7 @@ var Stars = (function() {
     this.camera = camera;
     this.renderer = renderer;
 
-    $.publish('stars.loaded', true);
+    $.publish('stars.loaded', 'Stars loaded.');
     setTimeout(function(){_this.onPanEnd();}, 1000);
   };
 

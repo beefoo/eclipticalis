@@ -63,7 +63,7 @@ var Music = (function() {
     this.notesLoaded++;
     if (this.notesLoaded >= this.notesCount) {
       console.log(this.notesLoaded + ' notes loaded.');
-      $.publish('music.loaded', true);
+      $.publish('music.loaded', 'Music loaded.');
     }
   };
 

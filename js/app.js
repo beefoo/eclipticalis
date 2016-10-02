@@ -987,7 +987,7 @@ var Music = (function() {
     this.notesLoaded++;
     if (this.notesLoaded >= this.notesCount) {
       console.log(this.notesLoaded + ' notes loaded.');
-      $.publish('music.loaded', true);
+      $.publish('music.loaded', 'Music loaded.');
     }
   };
 
@@ -1202,7 +1202,7 @@ var Stars = (function() {
     this.camera = camera;
     this.renderer = renderer;
 
-    $.publish('stars.loaded', true);
+    $.publish('stars.loaded', 'Stars loaded.');
     setTimeout(function(){_this.onPanEnd();}, 1000);
   };
 
@@ -1420,18 +1420,7 @@ var App = (function() {
     this.seqStart = 0;
 
     // wait for stars and music to be loaded
-    var starsLoaded = false;
-    var musicLoaded = false;
-    $.subscribe('stars.loaded', function(){
-      console.log('Stars ready.');
-      if (musicLoaded) _this.onReady();
-      else starsLoaded = true;
-    });
-    $.subscribe('music.loaded', function(){
-      console.log('Music ready.');
-      if (starsLoaded) _this.onReady();
-      else musicLoaded = true;
-    });
+    this.queueSubscriptions(['stars.loaded', 'music.loaded']);
 
     // load stars and music
     this.music = new Music(this.opt.music);
@@ -1503,6 +1492,20 @@ var App = (function() {
     $('.instructions').show().addClass('active');
     this.loadListeners();
     this.render();
+  };
+
+  App.prototype.queueSubscriptions = function(subs){
+    var _this = this;
+    var total = subs.length;
+    var loaded = 0;
+
+    $.each(subs, function(i, s){
+      $.subscribe(s, function(e, message){
+        console.log(message);
+        loaded++;
+        if (loaded >= total) _this.onReady();
+      });
+    });
   };
 
   App.prototype.render = function(){
