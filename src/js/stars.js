@@ -80,7 +80,7 @@ var Stars = (function() {
     });
 
     this.starLen = starLen;
-    this.starIndex = Array.apply(null, {length: starLen}).map(Number.call, Number);
+    // this.starIndex = Array.apply(null, {length: starLen}).map(Number.call, Number);
   };
 
   Stars.prototype.onLoadStarData = function(stars){
@@ -118,6 +118,7 @@ var Stars = (function() {
     var colors = new Float32Array(stars.length * 3);
     var sizes = new Float32Array(stars.length);
     var size = this.opt.starSize;
+    var mags = new Float32Array(stars.length);
     $.each(stars, function(i, star){
       positions[i*3] = star.x;
       positions[i*3 + 1] = star.z;
@@ -126,10 +127,12 @@ var Stars = (function() {
       colors[i*3 + 1] = star.g;
       colors[i*3 + 2] = star.b;
       sizes[i] = star.s;
+      mags[i] = star.m;
     });
     this.positions = positions;
     this.sizes = sizes;
     this.originalSizes = sizes.slice();
+    this.mags = mags;
     // this.colors = colors;
 
     // build the scene
@@ -223,10 +226,12 @@ var Stars = (function() {
 
     // add start/end
     var dur = this.opt.flashDuration;
+    var mags = this.mags;
     points = points.map(function(point){
        point.start = point.x * (1-dur);
        point.end = point.start + dur;
        point.end = Math.min(point.end, 1);
+       point.mag = mags[point.i];
       //  if (point.start > (1-dur)) {
       //    point.start = (1-dur);
       //    point.end = 1;

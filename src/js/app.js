@@ -14,7 +14,7 @@ var App = (function() {
   function App(options) {
     var defaults = {
       container: '#main',
-      barMs: 4000
+      barMs: 6000
     };
     this.opt = $.extend({}, defaults, options);
     this.init();
@@ -99,12 +99,14 @@ var App = (function() {
   };
 
   App.prototype.onPanStart = function(){
+    $('.instructions').removeClass('active');
     this.stars.onPanStart();
     this.music.onPanStart();
   };
 
   App.prototype.onReady = function(){
     $('.loading').hide();
+    $('.instructions').show().addClass('active');
     this.loadListeners();
     this.render();
   };
