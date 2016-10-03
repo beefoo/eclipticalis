@@ -1,5 +1,7 @@
 # Music Eclipticalis
 
+The interface uses [Three.js](http://threejs.org/) to interact with the 3D stellar data and [Howler.js](http://howlerjs.com/) to play the music.
+
 ## Requirements
 
 1. [Python 2.7+](https://www.python.org/downloads/)
