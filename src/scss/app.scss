@@ -264,6 +264,7 @@ $bboxY: $bboxH / -2;
   bottom: 0;
   z-index: 1000;
   overflow: hidden;
+  overflow-y: auto;
   background: rgba(0,0,0,0.85);
 
   &:target,
@@ -272,11 +273,19 @@ $bboxY: $bboxH / -2;
   }
 
   .modal-content {
-    margin: 2rem auto;
+    margin: 0.35rem auto;
     padding: 1rem;
     max-width: 800px;
     position: relative;
     z-index: 50;
+    // height: 90vh;
+    // overflow: hidden;
+    // overflow-y: auto;
+    @include box-sizing();
+
+    h1, h2 {
+      margin-top: 0;
+    }
   }
 
   // A close button
