@@ -275,6 +275,8 @@ $bboxY: $bboxH / -2;
     margin: 2rem auto;
     padding: 1rem;
     max-width: 800px;
+    position: relative;
+    z-index: 50;
   }
 
   // A close button
