@@ -14,9 +14,46 @@ body {
   color: $lightGray;
 }
 
+h1,
+h2 {
+  font-size: 2rem;
+  letter-spacing: 0.2rem;
+  text-transform: uppercase;
+}
+p,
+.p {
+  letter-spacing: 0.1rem;
+  font-size: 1.2rem;
+  margin: 0 0 1rem;
+}
+
 a {
   &, &:link, &:visited, &:hover, &:active {
     color: $lightGray;
+  }
+}
+
+.images {
+  text-align: center;
+}
+.image {
+  display: inline-block;
+  padding: 1rem;
+  @include box-sizing();
+
+  &.half {
+    width: 49%;
+  }
+
+  img {
+    width: 100%;
+    height: auto;
+  }
+
+  .caption {
+    font-size: 0.8rem;
+    line-height: 1.4;
+    display: inline-block;
   }
 }
 
@@ -214,5 +251,59 @@ $bboxY: $bboxH / -2;
   right: 24px;
   span {
     display: inline-block;
+  }
+}
+
+
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  overflow: hidden;
+  background: rgba(0,0,0,0.85);
+
+  &:target,
+  &.active {
+    display: block;
+  }
+
+  .modal-content {
+    margin: 2rem auto;
+    padding: 1rem;
+    max-width: 800px;
+  }
+
+  // A close button
+  .modal-close {
+    display: block;
+    height: 1px; // Prevent close element to appear
+    clip: rect(0 0 0 0);
+    margin: -1px;
+    overflow: hidden;
+    font-size: 2rem;
+
+    // Background as close
+    &:before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 10;
+    }
+
+    // Actual close button on modal
+    &:after {
+      content: '\00d7';
+      position: absolute;
+      top: 0;
+      right: 20px;
+      z-index: 20;
+    }
   }
 }
