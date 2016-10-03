@@ -955,6 +955,7 @@ var Music = (function() {
     this.notes = [];
     this.activeNotes = [];
     this.queueReset = false;
+    this.isMuted = false;
     this.loadNotes();
     this.loadListeners();
   };
@@ -964,6 +965,10 @@ var Music = (function() {
 
     $.subscribe('stars.aligned', function(e, data){
       _this.onStarsAligned(data.points);
+    });
+
+    $.subscribe('volume.toggle', function(e, isOn){
+      _this.toggleVolume(isOn);
     });
   };
 
@@ -1012,6 +1017,7 @@ var Music = (function() {
   };
 
   Music.prototype.playNote = function(i, volume){
+    if (this.isMuted) return false;
     if (volume) this.notes[i].player.volume(volume)
     this.notes[i].player.play();
   };
@@ -1041,6 +1047,10 @@ var Music = (function() {
     for (var i=0; i<this.activeNotes.length; i++){
       this.activeNotes[i].played = false;
     }
+  };
+
+  Music.prototype.toggleVolume = function(on){
+    this.isMuted = !on;
   };
 
   return Music;
@@ -1461,6 +1471,16 @@ var App = (function() {
 
     // resize
     $(window).on('resize', function(){ _this.onResize(); });
+
+    $('.toggle-volume').on('click', function(e){
+      e.preventDefault();
+      var $link = $(this);
+      $link.toggleClass('on');
+      var isOn = $link.hasClass('on');
+      if (isOn) $link.text($link.attr('data-on'));
+      else $link.text($link.attr('data-off'));
+      $.publish('volume.toggle', isOn);
+    })
 
     // stars aligned
     $.subscribe('stars.aligned', function(e, data){

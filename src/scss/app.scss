@@ -192,10 +192,21 @@ $bboxY: $bboxH / -2;
   font-size: 1.1rem;
   letter-spacing: 0.05rem;
 
+  .divider {
+    display: inline-block;
+    padding: 0 0.5rem;
+    color: $darkGray;
+  }
+
   &, a {
     color: $gray;
   }
 
+}
+
+.menu {
+  background: black;
+  z-index: 10;
 }
 
 .status {
@@ -203,6 +214,5 @@ $bboxY: $bboxH / -2;
   right: 24px;
   span {
     display: inline-block;
-    padding-left: 1rem;
   }
 }

@@ -68,6 +68,16 @@ var App = (function() {
     // resize
     $(window).on('resize', function(){ _this.onResize(); });
 
+    $('.toggle-volume').on('click', function(e){
+      e.preventDefault();
+      var $link = $(this);
+      $link.toggleClass('on');
+      var isOn = $link.hasClass('on');
+      if (isOn) $link.text($link.attr('data-on'));
+      else $link.text($link.attr('data-off'));
+      $.publish('volume.toggle', isOn);
+    })
+
     // stars aligned
     $.subscribe('stars.aligned', function(e, data){
       var t = new Date();

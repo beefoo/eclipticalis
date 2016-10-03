@@ -31,6 +31,7 @@ var Music = (function() {
     this.notes = [];
     this.activeNotes = [];
     this.queueReset = false;
+    this.isMuted = false;
     this.loadNotes();
     this.loadListeners();
   };
@@ -40,6 +41,10 @@ var Music = (function() {
 
     $.subscribe('stars.aligned', function(e, data){
       _this.onStarsAligned(data.points);
+    });
+
+    $.subscribe('volume.toggle', function(e, isOn){
+      _this.toggleVolume(isOn);
     });
   };
 
@@ -88,6 +93,7 @@ var Music = (function() {
   };
 
   Music.prototype.playNote = function(i, volume){
+    if (this.isMuted) return false;
     if (volume) this.notes[i].player.volume(volume)
     this.notes[i].player.play();
   };
@@ -117,6 +123,10 @@ var Music = (function() {
     for (var i=0; i<this.activeNotes.length; i++){
       this.activeNotes[i].played = false;
     }
+  };
+
+  Music.prototype.toggleVolume = function(on){
+    this.isMuted = !on;
   };
 
   return Music;
