@@ -8,7 +8,8 @@ module.exports = {
     dest: publicAssets + '/js/',
     opt: {},
     src: [
-      sourceAssets + '/js/app.js'
+      sourceAssets + '/js/app.js',
+      sourceAssets + '/js/play.js'
     ]
   },
   sass: {

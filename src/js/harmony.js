@@ -41,8 +41,8 @@ var Harmony = (function() {
     if (this.notesLoaded >= this.notesCount) {
       console.log(this.notesLoaded + ' harmony notes loaded.');
       $.publish('harmony.loaded', 'Harmony loaded.');
-      for (var i=0; i<this.notes.length; i++)
-        this.notes[i].duration = this.notes[i].player.duration();
+      // for (var i=0; i<this.notes.length; i++)
+      //   this.notes[i].duration = this.notes[i].player.duration();
     }
   };
 
