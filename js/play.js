@@ -1121,7 +1121,7 @@ var Harmony = (function() {
   };
 
   Harmony.prototype.stopNote = function(i){
-    if (i===false || i < 0 || i >= this.notes.length) return false;
+    if (i===false || i==undefined || i < 0 || i >= this.notes.length) return false;
     this.notes[i].player.loop(false);
   };
 
@@ -1557,7 +1557,16 @@ var PlayHarmony = (function() {
   PlayHarmony.prototype.loadListeners = function(){};
 
   PlayHarmony.prototype.render = function(percent){
-    
+    if (percent < 0.5) percent = UTIL.norm(percent, 0, 0.5);
+    else percent = 1.0 - UTIL.norm(percent, 0.5, 1);
+
+    var note = Math.floor(percent * this.notesCount);
+
+    if (this.activeNote !== note) {
+      this.stopNote(this.activeNote);
+      this.activeNote = note;
+      this.playNote(this.activeNote, 1.0, true);
+    }
   };
 
   return PlayHarmony;
@@ -1568,7 +1577,12 @@ var PlayHarmony = (function() {
 
 var PlayStars = (function() {
   function PlayStars(options) {
-    var defaults = {};
+    var defaults = {
+      alphaAngleRange: [360, 0],
+      betaAngleRange: [-15, 15],
+      alphaStart: 0,
+      betaStart: -15,
+    };
     options = $.extend({}, defaults, options);
     Stars.call(this, options);
   }
@@ -1580,7 +1594,40 @@ var PlayStars = (function() {
   PlayStars.prototype.onPanEnd = function(){};
 
   PlayStars.prototype.render = function(percent){
-    // go!
+    this.alpha = UTIL.lerp(this.opt.alphaAngleRange[0], this.opt.alphaAngleRange[1], percent);
+    this.beta = UTIL.lerp(this.opt.betaAngleRange[0], this.opt.betaAngleRange[1], percent);
+
+    // console.log(this.alpha, this.beta);
+
+    var vector3 = UTIL.vector3(this.alpha, this.beta, this.opt.far);
+    this.target.x = vector3[0];
+    this.target.y = vector3[1];
+    this.target.z = vector3[2];
+    this.camera.lookAt(this.target);
+    this.renderStatus();
+    // this.geometry.attributes.size.needsUpdate = true;
+    this.renderer.render(this.scene, this.camera);
+  };
+
+  PlayStars.prototype.renderStars = function(progress){
+    // var mult = this.opt.flashMultiplier;
+    //
+    // for (var i=this.activeStars.length-1; i>=0; i--){
+    //   var star = this.activeStars[i];
+    //   var si = star.i;
+    //   // flashing star
+    //   if (progress > star.start && progress < star.end) {
+    //     var p = UTIL.norm(progress, star.start, star.end);
+    //     p = UTIL.sin(p);
+    //     var flashAmount = UTIL.lerp(1, mult, p);
+    //     this.sizes[si] = this.originalSizes[si] * flashAmount;
+    //   // not flashing
+    //   } else {
+    //     this.sizes[si] = this.originalSizes[si];
+    //   }
+    // }
+    //
+    // this.geometry.attributes.size.needsUpdate = true;
   };
 
   return PlayStars;
@@ -1592,7 +1639,7 @@ var PlayApp = (function() {
   function PlayApp(options) {
     var defaults = {
       container: '#main',
-      barMs: 6000
+      totalMs: 240000 // 4 mins
     };
     this.opt = $.extend({}, defaults, options);
     this.init();
@@ -1626,6 +1673,8 @@ var PlayApp = (function() {
   PlayApp.prototype.onReady = function(){
     $('.loading').hide();
     $('.instructions').show().addClass('active');
+    var d = new Date();
+    this.startMs = d.getTime();
     this.loadListeners();
     this.render();
   };
@@ -1646,12 +1695,21 @@ var PlayApp = (function() {
 
   PlayApp.prototype.render = function(){
     var _this = this;
-    var percent = 0;
+    var t = new Date();
+    var elapsedMs = t.getTime() - this.startMs;
+    var percent = elapsedMs / this.opt.totalMs;
+    percent = UTIL.lim(percent, 0, 1);
 
     this.stars.render(percent);
     // this.music.render(percent);
     this.harmony.render(percent);
 
+    // restart loop
+    if (percent >= 1) {
+      this.startMs = t.getTime();
+    }
+
+    // continue if time left
     requestAnimationFrame(function(){
       _this.render();
     });

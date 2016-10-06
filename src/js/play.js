@@ -17,7 +17,7 @@ var PlayApp = (function() {
   function PlayApp(options) {
     var defaults = {
       container: '#main',
-      barMs: 6000
+      totalMs: 240000 // 4 mins
     };
     this.opt = $.extend({}, defaults, options);
     this.init();
@@ -51,6 +51,8 @@ var PlayApp = (function() {
   PlayApp.prototype.onReady = function(){
     $('.loading').hide();
     $('.instructions').show().addClass('active');
+    var d = new Date();
+    this.startMs = d.getTime();
     this.loadListeners();
     this.render();
   };
@@ -71,12 +73,21 @@ var PlayApp = (function() {
 
   PlayApp.prototype.render = function(){
     var _this = this;
-    var percent = 0;
+    var t = new Date();
+    var elapsedMs = t.getTime() - this.startMs;
+    var percent = elapsedMs / this.opt.totalMs;
+    percent = UTIL.lim(percent, 0, 1);
 
     this.stars.render(percent);
     // this.music.render(percent);
     this.harmony.render(percent);
 
+    // restart loop
+    if (percent >= 1) {
+      this.startMs = t.getTime();
+    }
+
+    // continue if time left
     requestAnimationFrame(function(){
       _this.render();
     });

@@ -1128,7 +1128,7 @@ var Harmony = (function() {
   };
 
   Harmony.prototype.stopNote = function(i){
-    if (i===false || i < 0 || i >= this.notes.length) return false;
+    if (i===false || i==undefined || i < 0 || i >= this.notes.length) return false;
     this.notes[i].player.loop(false);
   };
 
