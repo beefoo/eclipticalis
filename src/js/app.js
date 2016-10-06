@@ -8,6 +8,7 @@
 //=include helpers.js
 //=include config.js
 //=include music.js
+//=include harmony.js
 //=include stars.js
 
 var App = (function() {
@@ -26,10 +27,11 @@ var App = (function() {
     this.seqStart = 0;
 
     // wait for stars and music to be loaded
-    this.queueSubscriptions(['stars.loaded', 'music.loaded']);
+    this.queueSubscriptions(['stars.loaded', 'music.loaded', 'harmony.loaded']);
 
     // load stars and music
     this.music = new Music(this.opt.music);
+    this.harmony = new Harmony(this.opt.harmony);
     this.stars = new Stars(this.opt.stars);
   };
 
@@ -139,6 +141,7 @@ var App = (function() {
 
     this.stars.render(progress);
     this.music.render(progress);
+    this.harmony.render(progress);
 
     requestAnimationFrame(function(){
       _this.render();

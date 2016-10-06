@@ -1,4 +1,5 @@
 var CONFIG = {
   stars: {},
-  music: {}
+  music: {},
+  harmony: {}
 };
