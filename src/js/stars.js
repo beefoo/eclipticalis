@@ -240,7 +240,19 @@ var Stars = (function() {
     });
     this.activeStars = points;
 
-    $.publish('stars.aligned', {points: points});
+    // also send position
+    var alpha = this.alpha;
+    var beta = this.beta;
+    var alphaRange = this.opt.alphaAngleRange;
+    var betaRange = this.opt.betaAngleRange;
+
+    $.publish('stars.aligned', {
+      points: points,
+      position: {
+        alpha: UTIL.norm(alpha, alphaRange[0], alphaRange[1]),
+        beta: UTIL.norm(beta, betaRange[0], betaRange[1])
+      }
+    });
   };
 
   // get the relative point in the bbox; null if not in bbox

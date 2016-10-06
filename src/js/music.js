@@ -40,7 +40,7 @@ var Music = (function() {
     var _this = this;
 
     $.subscribe('stars.aligned', function(e, data){
-      _this.onStarsAligned(data.points);
+      _this.onStarsAligned(data);
     });
 
     $.subscribe('volume.toggle', function(e, isOn){
@@ -55,16 +55,20 @@ var Music = (function() {
     this.notesLoaded = 0;
 
     for (var i=0; i<notes.length; i++) {
+      this.notes[i] = {};
+    }
+
+    for (var i=0; i<notes.length; i++) {
       var note = notes[i];
       note.player = new Howl({
         src: note.src,
-        onload: function(){ _this.onLoadNote(i); }
+        onload: function(){ _this.onLoadNote(this); }
       });
-      this.notes.push(note);
+      this.notes[i] = note;
     }
   };
 
-  Music.prototype.onLoadNote = function(i){
+  Music.prototype.onLoadNote = function(player){
     this.notesLoaded++;
     if (this.notesLoaded >= this.notesCount) {
       console.log(this.notesLoaded + ' notes loaded.');
@@ -76,7 +80,8 @@ var Music = (function() {
     this.activeNotes = [];
   };
 
-  Music.prototype.onStarsAligned = function(points){
+  Music.prototype.onStarsAligned = function(data){
+    var points = data.points;
     var notesCount = this.notesCount;
     var minVolume = this.opt.minVolume;
     var maxVolume = this.opt.maxVolume;
@@ -92,9 +97,10 @@ var Music = (function() {
     this.activeNotes = points;
   };
 
-  Music.prototype.playNote = function(i, volume){
-    if (this.isMuted) return false;
-    if (volume) this.notes[i].player.volume(volume)
+  Music.prototype.playNote = function(i, volume, loop){
+    if (this.isMuted || i===false || i < 0 || i >= this.notes.length) return false;
+    if (volume) this.notes[i].player.volume(volume);
+    if (loop) this.notes[i].player.loop(true);
     this.notes[i].player.play();
   };
 
