@@ -39,8 +39,10 @@ var Harmony = (function() {
   Harmony.prototype.onLoadNote = function(player){
     this.notesLoaded++;
     if (this.notesLoaded >= this.notesCount) {
-      console.log(this.notesLoaded + ' harmony notes loaded.');
-      $.publish('harmony.loaded', 'Harmony loaded.');
+      $.publish('harmony.loaded', {
+        message: this.notesLoaded + ' harmony notes loaded.',
+        count: this.notesLoaded
+      });
       // for (var i=0; i<this.notes.length; i++)
       //   this.notes[i].duration = this.notes[i].player.duration();
     }

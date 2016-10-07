@@ -17,7 +17,8 @@ var PlayApp = (function() {
   function PlayApp(options) {
     var defaults = {
       container: '#main',
-      totalMs: 240000 // 4 mins
+      totalMs: 240000, // 4 mins
+      recordMode: true
     };
     this.opt = $.extend({}, defaults, options);
     this.init();
@@ -26,15 +27,16 @@ var PlayApp = (function() {
   PlayApp.prototype.init = function(){
     var _this = this;
 
+    this.recordMode = this.opt.recordMode;
     this.seqStart = 0;
 
     // wait for stars and music to be loaded
     this.queueSubscriptions(['stars.loaded', 'music.loaded', 'harmony.loaded']);
 
     // load stars and music
-    this.music = new PlayMusic(this.opt.music);
-    this.harmony = new PlayHarmony(this.opt.harmony);
-    this.stars = new PlayStars(this.opt.stars);
+    this.music = new PlayMusic($.extend(this.opt.harmony, {recordMode: this.recordMode}));
+    this.harmony = new PlayHarmony($.extend(this.opt.harmony, {recordMode: this.recordMode}));
+    this.stars = new PlayStars($.extend(this.opt.harmony, {recordMode: this.recordMode}));
   };
 
   PlayApp.prototype.loadListeners = function(){
@@ -63,8 +65,8 @@ var PlayApp = (function() {
     var loaded = 0;
 
     $.each(subs, function(i, s){
-      $.subscribe(s, function(e, message){
-        console.log(message);
+      $.subscribe(s, function(e, data){
+        console.log(data.message);
         loaded++;
         if (loaded >= total) _this.onReady();
       });
@@ -80,7 +82,7 @@ var PlayApp = (function() {
 
     this.stars.render(percent);
     // this.music.render(percent);
-    this.harmony.render(percent);
+    if (!this.recordMode) this.harmony.render(percent);
 
     // restart loop
     if (percent >= 1) {
@@ -88,9 +90,14 @@ var PlayApp = (function() {
     }
 
     // continue if time left
-    requestAnimationFrame(function(){
-      _this.render();
-    });
+    if (!this.recordMode || percent < 1) {
+      requestAnimationFrame(function(){
+        _this.render();
+      });
+    } else {
+      console.log('Finished.')
+      this.stars.downloadSequence();
+    }
   };
 
   return PlayApp;

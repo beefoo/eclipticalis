@@ -996,8 +996,10 @@ var Music = (function() {
   Music.prototype.onLoadNote = function(player){
     this.notesLoaded++;
     if (this.notesLoaded >= this.notesCount) {
-      console.log(this.notesLoaded + ' notes loaded.');
-      $.publish('music.loaded', 'Music loaded.');
+      $.publish('music.loaded', {
+        message: this.notesLoaded + ' notes loaded.',
+        count: this.notesLoaded
+      });
     }
   };
 
@@ -1105,8 +1107,10 @@ var Harmony = (function() {
   Harmony.prototype.onLoadNote = function(player){
     this.notesLoaded++;
     if (this.notesLoaded >= this.notesCount) {
-      console.log(this.notesLoaded + ' harmony notes loaded.');
-      $.publish('harmony.loaded', 'Harmony loaded.');
+      $.publish('harmony.loaded', {
+        message: this.notesLoaded + ' harmony notes loaded.',
+        count: this.notesLoaded
+      });
       // for (var i=0; i<this.notes.length; i++)
       //   this.notes[i].duration = this.notes[i].player.duration();
     }
@@ -1170,7 +1174,7 @@ var Stars = (function() {
       texture: "img/star3.png",
       pixelsPerDegree: 10, // how much pan pixels move camera in degrees
       alphaAngleRange: [0, 360], // angle from x to z (controlled by pan x)
-      betaAngleRange: [-15, 15], // angle from x to y (controlled by pan y),
+      betaAngleRange: [-30, 30], // angle from x to y (controlled by pan y),
       alphaStart: 0,
       betaStart: -2.5,
       maxActive: 16,
@@ -1183,21 +1187,28 @@ var Stars = (function() {
   }
 
   Stars.prototype.init = function(){
-    // set dom elements
-    this.$container = $(this.opt.container);
-    this.$bbox = $(this.opt.bbox);
-    if (this.opt.guides) this.$bbox.addClass('guide');
-    this.setCanvasValues();
+    this.initCanvas();
+    this.initCamera();
 
+    this.activeStars = [];
+    this.loadStars();
+  };
+
+  Stars.prototype.initCamera = function(){
     // determine where to look at initially
     this.alpha = this.opt.alphaStart; // angle from x to z (controlled by pan x)
     this.beta = this.opt.betaStart; // angle from x to y (controlled by pan y)
     this.target = new THREE.Vector3();
     this.origin = new THREE.Vector3(0, 0, 0);
     this.viewChanged = true;
+  };
 
-    this.activeStars = [];
-    this.loadStars();
+  Stars.prototype.initCanvas = function(){
+    // set dom elements
+    this.$container = $(this.opt.container);
+    this.$bbox = $(this.opt.bbox);
+    if (this.opt.guides) this.$bbox.addClass('guide');
+    this.setCanvasValues();
   };
 
   Stars.prototype.drawStarGuides = function(points){
@@ -1218,13 +1229,10 @@ var Stars = (function() {
 
   Stars.prototype.loadStars = function(){
     var _this = this;
-    var starLen = 0;
 
     $.getJSON(this.opt.dataUrl, function(data) {
       var cols = data.cols;
       var rows = data.rows;
-      starLen = rows.length;
-      console.log('Loaded '+starLen+' stars.')
       var stars = [];
       $.each(rows, function(i, row){
         var star = {};
@@ -1235,9 +1243,6 @@ var Stars = (function() {
       });
       _this.onLoadStarData(stars);
     });
-
-    this.starLen = starLen;
-    // this.starIndex = Array.apply(null, {length: starLen}).map(Number.call, Number);
   };
 
   Stars.prototype.onLoadStarData = function(stars){
@@ -1245,6 +1250,7 @@ var Stars = (function() {
     var opt = this.opt;
     var w = this.containerW;
     var h = this.containerH;
+    var starLen = stars.length;
 
     // init camera
     var camera = new THREE.PerspectiveCamera(opt.fov, w/h, opt.near, opt.far);
@@ -1271,11 +1277,11 @@ var Stars = (function() {
       transparent:    true
     });
     var geometry = new THREE.BufferGeometry();
-    var positions = new Float32Array(stars.length* 3);
-    var colors = new Float32Array(stars.length * 3);
-    var sizes = new Float32Array(stars.length);
+    var positions = new Float32Array(starLen* 3);
+    var colors = new Float32Array(starLen * 3);
+    var sizes = new Float32Array(starLen);
     var size = this.opt.starSize;
-    var mags = new Float32Array(stars.length);
+    var mags = new Float32Array(starLen);
     $.each(stars, function(i, star){
       positions[i*3] = star.x;
       positions[i*3 + 1] = star.z;
@@ -1309,8 +1315,12 @@ var Stars = (function() {
     this.geometry = geometry;
     this.camera = camera;
     this.renderer = renderer;
+    this.starLen = starLen;
 
-    $.publish('stars.loaded', 'Stars loaded.');
+    $.publish('stars.loaded', {
+      message: 'Loaded ' + starLen + ' stars.',
+      count: starLen
+    });
     setTimeout(function(){_this.onPanEnd();}, 1000);
   };
 
@@ -1327,7 +1337,7 @@ var Stars = (function() {
     // console.log(bbox)
     var origin = this.origin;
     var positions = this.positions;
-    var triplesLen = parseInt(positions.length/3);
+    var triplesLen = this.starLen;
     var pointsInBbox = [];
     // for each star
     for (var i=0; i<triplesLen; i++) {
@@ -1631,8 +1641,8 @@ var App = (function() {
     var loaded = 0;
 
     $.each(subs, function(i, s){
-      $.subscribe(s, function(e, message){
-        console.log(message);
+      $.subscribe(s, function(e, data){
+        console.log(data.message);
         loaded++;
         if (loaded >= total) _this.onReady();
       });

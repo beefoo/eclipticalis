@@ -71,8 +71,10 @@ var Music = (function() {
   Music.prototype.onLoadNote = function(player){
     this.notesLoaded++;
     if (this.notesLoaded >= this.notesCount) {
-      console.log(this.notesLoaded + ' notes loaded.');
-      $.publish('music.loaded', 'Music loaded.');
+      $.publish('music.loaded', {
+        message: this.notesLoaded + ' notes loaded.',
+        count: this.notesLoaded
+      });
     }
   };
 

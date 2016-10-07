@@ -989,8 +989,10 @@ var Music = (function() {
   Music.prototype.onLoadNote = function(player){
     this.notesLoaded++;
     if (this.notesLoaded >= this.notesCount) {
-      console.log(this.notesLoaded + ' notes loaded.');
-      $.publish('music.loaded', 'Music loaded.');
+      $.publish('music.loaded', {
+        message: this.notesLoaded + ' notes loaded.',
+        count: this.notesLoaded
+      });
     }
   };
 
@@ -1098,8 +1100,10 @@ var Harmony = (function() {
   Harmony.prototype.onLoadNote = function(player){
     this.notesLoaded++;
     if (this.notesLoaded >= this.notesCount) {
-      console.log(this.notesLoaded + ' harmony notes loaded.');
-      $.publish('harmony.loaded', 'Harmony loaded.');
+      $.publish('harmony.loaded', {
+        message: this.notesLoaded + ' harmony notes loaded.',
+        count: this.notesLoaded
+      });
       // for (var i=0; i<this.notes.length; i++)
       //   this.notes[i].duration = this.notes[i].player.duration();
     }
@@ -1163,7 +1167,7 @@ var Stars = (function() {
       texture: "img/star3.png",
       pixelsPerDegree: 10, // how much pan pixels move camera in degrees
       alphaAngleRange: [0, 360], // angle from x to z (controlled by pan x)
-      betaAngleRange: [-15, 15], // angle from x to y (controlled by pan y),
+      betaAngleRange: [-30, 30], // angle from x to y (controlled by pan y),
       alphaStart: 0,
       betaStart: -2.5,
       maxActive: 16,
@@ -1176,21 +1180,28 @@ var Stars = (function() {
   }
 
   Stars.prototype.init = function(){
-    // set dom elements
-    this.$container = $(this.opt.container);
-    this.$bbox = $(this.opt.bbox);
-    if (this.opt.guides) this.$bbox.addClass('guide');
-    this.setCanvasValues();
+    this.initCanvas();
+    this.initCamera();
 
+    this.activeStars = [];
+    this.loadStars();
+  };
+
+  Stars.prototype.initCamera = function(){
     // determine where to look at initially
     this.alpha = this.opt.alphaStart; // angle from x to z (controlled by pan x)
     this.beta = this.opt.betaStart; // angle from x to y (controlled by pan y)
     this.target = new THREE.Vector3();
     this.origin = new THREE.Vector3(0, 0, 0);
     this.viewChanged = true;
+  };
 
-    this.activeStars = [];
-    this.loadStars();
+  Stars.prototype.initCanvas = function(){
+    // set dom elements
+    this.$container = $(this.opt.container);
+    this.$bbox = $(this.opt.bbox);
+    if (this.opt.guides) this.$bbox.addClass('guide');
+    this.setCanvasValues();
   };
 
   Stars.prototype.drawStarGuides = function(points){
@@ -1211,13 +1222,10 @@ var Stars = (function() {
 
   Stars.prototype.loadStars = function(){
     var _this = this;
-    var starLen = 0;
 
     $.getJSON(this.opt.dataUrl, function(data) {
       var cols = data.cols;
       var rows = data.rows;
-      starLen = rows.length;
-      console.log('Loaded '+starLen+' stars.')
       var stars = [];
       $.each(rows, function(i, row){
         var star = {};
@@ -1228,9 +1236,6 @@ var Stars = (function() {
       });
       _this.onLoadStarData(stars);
     });
-
-    this.starLen = starLen;
-    // this.starIndex = Array.apply(null, {length: starLen}).map(Number.call, Number);
   };
 
   Stars.prototype.onLoadStarData = function(stars){
@@ -1238,6 +1243,7 @@ var Stars = (function() {
     var opt = this.opt;
     var w = this.containerW;
     var h = this.containerH;
+    var starLen = stars.length;
 
     // init camera
     var camera = new THREE.PerspectiveCamera(opt.fov, w/h, opt.near, opt.far);
@@ -1264,11 +1270,11 @@ var Stars = (function() {
       transparent:    true
     });
     var geometry = new THREE.BufferGeometry();
-    var positions = new Float32Array(stars.length* 3);
-    var colors = new Float32Array(stars.length * 3);
-    var sizes = new Float32Array(stars.length);
+    var positions = new Float32Array(starLen* 3);
+    var colors = new Float32Array(starLen * 3);
+    var sizes = new Float32Array(starLen);
     var size = this.opt.starSize;
-    var mags = new Float32Array(stars.length);
+    var mags = new Float32Array(starLen);
     $.each(stars, function(i, star){
       positions[i*3] = star.x;
       positions[i*3 + 1] = star.z;
@@ -1302,8 +1308,12 @@ var Stars = (function() {
     this.geometry = geometry;
     this.camera = camera;
     this.renderer = renderer;
+    this.starLen = starLen;
 
-    $.publish('stars.loaded', 'Stars loaded.');
+    $.publish('stars.loaded', {
+      message: 'Loaded ' + starLen + ' stars.',
+      count: starLen
+    });
     setTimeout(function(){_this.onPanEnd();}, 1000);
   };
 
@@ -1320,7 +1330,7 @@ var Stars = (function() {
     // console.log(bbox)
     var origin = this.origin;
     var positions = this.positions;
-    var triplesLen = parseInt(positions.length/3);
+    var triplesLen = this.starLen;
     var pointsInBbox = [];
     // for each star
     for (var i=0; i<triplesLen; i++) {
@@ -1579,9 +1589,10 @@ var PlayStars = (function() {
   function PlayStars(options) {
     var defaults = {
       alphaAngleRange: [360, 0],
-      betaAngleRange: [-15, 15],
+      betaAngleRange: [-30, 30],
       alphaStart: 0,
-      betaStart: -15,
+      betaStart: -30,
+      crossedX: 0.5
     };
     options = $.extend({}, defaults, options);
     Stars.call(this, options);
@@ -1591,11 +1602,83 @@ var PlayStars = (function() {
   PlayStars.prototype = Object.create(Stars.prototype);
   PlayStars.prototype.constructor = PlayStars;
 
+  PlayStars.prototype.init = function(){
+    this.initCanvas();
+    this.initCamera();
+
+    this.recordMode = this.opt.recordMode;
+    this.crossedX = this.opt.crossedX;
+    this.activeStars = [];
+    this.sequence = [];
+
+    this.loadStars();
+  };
+
+  PlayStars.prototype.downloadSequence = function(){
+    var sequence = this.sequence;
+    var data = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(sequence));
+    window.open(data, "", "_blank");
+  }
+
+  PlayStars.prototype.loadCrossed = function(count){
+    var crossed = new Float32Array(count);
+    for (var i=0; i<count; i++) {
+      crossed[i] = 0;
+    }
+    this.crossed = crossed;
+    return this.crossed;
+  };
+
   PlayStars.prototype.onPanEnd = function(){};
 
+  PlayStars.prototype.recordSequence = function(percent){
+    var starLen = this.starLen;
+    var positions = this.positions;
+    var crossed = this.crossed || this.loadCrossed(starLen);
+    var crossedX = this.crossedX;
+    // reset the 2nd time around
+    if (percent >= 0.5 && !this.resentCrossed) {
+      this.resentCrossed = true;
+      crossed = this.loadCrossed(starLen);
+    }
+    // for each star
+    for (var i=0; i<starLen; i++) {
+      var c = crossed[i];
+      if (c > 0) continue; // already crossed
+      var x = positions[i*3];
+      var y = positions[i*3+1];
+      var z = positions[i*3+2];
+
+      var point = this.pointInBbox(new THREE.Vector3(x, y, z));
+      // in bbox
+      if (point) {
+        // point is left of cross, not seen yet
+        if (point.x < crossedX && c===0) {
+          this.crossed[i] = -1;
+        }
+        // it crossed
+        else if (point.x > crossedX && c < 0) {
+          this.crossed[i] = 1;
+          this.sequence.push([percent, i, point.y]);
+          $('.count').text(this.sequence.length);
+        }
+      }
+    }
+  };
+
   PlayStars.prototype.render = function(percent){
-    this.alpha = UTIL.lerp(this.opt.alphaAngleRange[0], this.opt.alphaAngleRange[1], percent);
-    this.beta = UTIL.lerp(this.opt.betaAngleRange[0], this.opt.betaAngleRange[1], percent);
+    var alphaPercent = 0;
+    var betaPercent = 0;
+    if (percent < 0.5) {
+      alphaPercent = UTIL.norm(percent, 0, 0.5);
+      betaPercent = alphaPercent;
+    } else {
+      alphaPercent = UTIL.norm(percent, 0.5, 1);
+      betaPercent = 1.0 - alphaPercent;
+    }
+
+    this.alpha = UTIL.lerp(this.opt.alphaAngleRange[0], this.opt.alphaAngleRange[1], alphaPercent);
+    this.beta = UTIL.lerp(this.opt.betaAngleRange[0], this.opt.betaAngleRange[1], betaPercent);
 
     // console.log(this.alpha, this.beta);
 
@@ -1604,6 +1687,11 @@ var PlayStars = (function() {
     this.target.y = vector3[1];
     this.target.z = vector3[2];
     this.camera.lookAt(this.target);
+
+    if (this.recordMode) {
+      this.recordSequence(percent);
+    }
+
     this.renderStatus();
     // this.geometry.attributes.size.needsUpdate = true;
     this.renderer.render(this.scene, this.camera);
@@ -1639,7 +1727,8 @@ var PlayApp = (function() {
   function PlayApp(options) {
     var defaults = {
       container: '#main',
-      totalMs: 240000 // 4 mins
+      totalMs: 240000, // 4 mins
+      recordMode: true
     };
     this.opt = $.extend({}, defaults, options);
     this.init();
@@ -1648,15 +1737,16 @@ var PlayApp = (function() {
   PlayApp.prototype.init = function(){
     var _this = this;
 
+    this.recordMode = this.opt.recordMode;
     this.seqStart = 0;
 
     // wait for stars and music to be loaded
     this.queueSubscriptions(['stars.loaded', 'music.loaded', 'harmony.loaded']);
 
     // load stars and music
-    this.music = new PlayMusic(this.opt.music);
-    this.harmony = new PlayHarmony(this.opt.harmony);
-    this.stars = new PlayStars(this.opt.stars);
+    this.music = new PlayMusic($.extend(this.opt.harmony, {recordMode: this.recordMode}));
+    this.harmony = new PlayHarmony($.extend(this.opt.harmony, {recordMode: this.recordMode}));
+    this.stars = new PlayStars($.extend(this.opt.harmony, {recordMode: this.recordMode}));
   };
 
   PlayApp.prototype.loadListeners = function(){
@@ -1685,8 +1775,8 @@ var PlayApp = (function() {
     var loaded = 0;
 
     $.each(subs, function(i, s){
-      $.subscribe(s, function(e, message){
-        console.log(message);
+      $.subscribe(s, function(e, data){
+        console.log(data.message);
         loaded++;
         if (loaded >= total) _this.onReady();
       });
@@ -1702,7 +1792,7 @@ var PlayApp = (function() {
 
     this.stars.render(percent);
     // this.music.render(percent);
-    this.harmony.render(percent);
+    if (!this.recordMode) this.harmony.render(percent);
 
     // restart loop
     if (percent >= 1) {
@@ -1710,9 +1800,14 @@ var PlayApp = (function() {
     }
 
     // continue if time left
-    requestAnimationFrame(function(){
-      _this.render();
-    });
+    if (!this.recordMode || percent < 1) {
+      requestAnimationFrame(function(){
+        _this.render();
+      });
+    } else {
+      console.log('Finished.')
+      this.stars.downloadSequence();
+    }
   };
 
   return PlayApp;

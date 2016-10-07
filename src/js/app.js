@@ -118,8 +118,8 @@ var App = (function() {
     var loaded = 0;
 
     $.each(subs, function(i, s){
-      $.subscribe(s, function(e, message){
-        console.log(message);
+      $.subscribe(s, function(e, data){
+        console.log(data.message);
         loaded++;
         if (loaded >= total) _this.onReady();
       });
