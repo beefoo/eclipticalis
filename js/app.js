@@ -1155,6 +1155,15 @@ var Harmony = (function() {
     }
   };
 
+  Harmony.prototype.toggleVolume = function(on){
+    this.isMuted = !on;
+    var volume = 1.0;
+    if (this.isMuted) volume = 0.0;
+    for(var i=0; i<this.notes.length; i++) {
+      this.notes[i].player.volume(volume);
+    }
+  };
+
   return Harmony;
 
 })();
