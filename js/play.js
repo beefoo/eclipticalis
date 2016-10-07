@@ -1728,7 +1728,8 @@ var PlayApp = (function() {
     var defaults = {
       container: '#main',
       totalMs: 240000, // 4 mins
-      recordMode: true
+      sequence: 'data/seqeunce.json',
+      recordMode: false
     };
     this.opt = $.extend({}, defaults, options);
     this.init();
@@ -1741,9 +1742,10 @@ var PlayApp = (function() {
     this.seqStart = 0;
 
     // wait for stars and music to be loaded
-    this.queueSubscriptions(['stars.loaded', 'music.loaded', 'harmony.loaded']);
+    this.queueSubscriptions(['sequence.loaded', 'stars.loaded', 'music.loaded', 'harmony.loaded']);
 
     // load stars and music
+    this.loadSequence(this.opt.sequence);
     this.music = new PlayMusic($.extend(this.opt.harmony, {recordMode: this.recordMode}));
     this.harmony = new PlayHarmony($.extend(this.opt.harmony, {recordMode: this.recordMode}));
     this.stars = new PlayStars($.extend(this.opt.harmony, {recordMode: this.recordMode}));
@@ -1754,6 +1756,26 @@ var PlayApp = (function() {
 
     // resize
     $(window).on('resize', function(){ _this.onResize(); });
+  };
+
+  PlayApp.prototype.loadSequence = function(file){
+    var _this = this;
+    this.sequence = [];
+    $.getJSON(file, function(rows) {
+      var sequence = [];
+      $.each(rows, function(i, row){
+        sequence.push({ t: row[0], i: row[1], y: row[2] });
+      });
+      _this.onLoadSequence(sequence);
+    });
+  };
+
+  PlayApp.prototype.onLoadSequence = function(sequence){
+    this.sequence = sequence;
+    $.publish('sequence.loaded', {
+      message: 'Loaded ' + sequence.length + ' steps in sequence.',
+      count: sequence.length
+    });
   };
 
   PlayApp.prototype.onResize = function(){
