@@ -18,7 +18,7 @@ var Stars = (function() {
       betaStart: -2.5,
       maxActive: 16,
       flashDuration: 0.2,
-      flashMultiplier: 20,
+      flashMultiplier: 10,
       guides: false
     };
     this.opt = $.extend({}, defaults, options);

@@ -20,7 +20,7 @@ parser.add_argument('-of', dest="OUTPUT_FILE", default="../data/stars.json", hel
 parser.add_argument('-d0', dest="MIN_DECLINATION", default="-45", type=float, help="Minumum declination")
 parser.add_argument('-d1', dest="MAX_DECLINATION", default="45", type=float, help="Maximum declination")
 parser.add_argument('-c', dest="COUNT", default="5000", type=int, help="Max number of most visible stars to retrieve")
-parser.add_argument('-sa', dest="SATURATION", default="0.5", type=float, help="Color saturation of stars")
+parser.add_argument('-sa', dest="SATURATION", default="0.1", type=float, help="Color saturation of stars")
 parser.add_argument('-ml', dest="MIN_LUM", default="0.7", type=float, help="Minumum luminence of stars")
 parser.add_argument('-m0', dest="MIN_MAGNITUDE", default="-1", type=float, help="Minumum visual magnitude of star")
 parser.add_argument('-m1', dest="MAX_MAGNITUDE", default="6.5", type=float, help="Maximum visual magnitude of star")
@@ -47,18 +47,44 @@ def norm(value, a, b):
 
 def normSigned(value, a, b):
     n = norm(value, a, b)
-    return n * 2.0 - 1;
+    return n * 2.0 - 1
+
+# http://stackoverflow.com/questions/21977786/star-b-v-color-index-to-apparent-rgb-color
+def bv2rgb(bv):
+  if bv < -0.4: bv = -0.4
+  if bv > 2.0: bv = 2.0
+  if bv >= -0.40 and bv < 0.00:
+    t = (bv + 0.40) / (0.00 + 0.40)
+    r = 0.61 + 0.11 * t + 0.1 * t * t
+    g = 0.70 + 0.07 * t + 0.1 * t * t
+    b = 1.0
+  elif bv >= 0.00 and bv < 0.40:
+    t = (bv - 0.00) / (0.40 - 0.00)
+    r = 0.83 + (0.17 * t)
+    g = 0.87 + (0.11 * t)
+    b = 1.0
+  elif bv >= 0.40 and bv < 1.60:
+    t = (bv - 0.40) / (1.60 - 0.40)
+    r = 1.0
+    g = 0.98 - 0.16 * t
+  else:
+    t = (bv - 1.60) / (2.00 - 1.60)
+    r = 1.0
+    g = 0.82 - 0.5 * t * t
+  if bv >= 0.40 and bv < 1.50:
+    t = (bv - 0.40) / (1.50 - 0.40)
+    b = 1.00 - 0.47 * t + 0.1 * t * t
+  elif bv >= 1.50 and bv < 1.951:
+    t = (bv - 1.50) / (1.94 - 1.50)
+    b = 0.63 - 0.6 * t * t
+  else:
+    b = 0.0
+  return (r, g, b)
 
 def ciToHue(ci):
-    redHue = 1.0
-    blueHue = 0.583
-    yellowHue = 0.167
-    if ci > 1.5:
-        return redHue
-    elif ci < 0.5:
-        return blueHue
-    else:
-        return yellowHue
+    (r, g, b) = bv2rgb(ci)
+    (h, l, s) = colorsys.rgb_to_hls(r, g, b)
+    return h
 
 stars = []
 cols = [
