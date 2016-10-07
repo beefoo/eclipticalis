@@ -158,7 +158,8 @@ var Stars = (function() {
 
     $.publish('stars.loaded', {
       message: 'Loaded ' + starLen + ' stars.',
-      count: starLen
+      count: starLen,
+      stars: stars
     });
     setTimeout(function(){_this.onPanEnd();}, 1000);
   };

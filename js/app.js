@@ -957,8 +957,8 @@ var Music = (function() {
     this.activeNotes = [];
     this.queueReset = false;
     this.isMuted = false;
-    this.loadNotes();
     this.loadListeners();
+    this.loadNotes();
   };
 
   Music.prototype.loadListeners = function(){
@@ -1319,7 +1319,8 @@ var Stars = (function() {
 
     $.publish('stars.loaded', {
       message: 'Loaded ' + starLen + ' stars.',
-      count: starLen
+      count: starLen,
+      stars: stars
     });
     setTimeout(function(){_this.onPanEnd();}, 1000);
   };

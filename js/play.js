@@ -950,8 +950,8 @@ var Music = (function() {
     this.activeNotes = [];
     this.queueReset = false;
     this.isMuted = false;
-    this.loadNotes();
     this.loadListeners();
+    this.loadNotes();
   };
 
   Music.prototype.loadListeners = function(){
@@ -1312,7 +1312,8 @@ var Stars = (function() {
 
     $.publish('stars.loaded', {
       message: 'Loaded ' + starLen + ' stars.',
-      count: starLen
+      count: starLen,
+      stars: stars
     });
     setTimeout(function(){_this.onPanEnd();}, 1000);
   };
@@ -1539,12 +1540,19 @@ var PlayMusic = (function() {
   PlayMusic.prototype = Object.create(Music.prototype);
   PlayMusic.prototype.constructor = PlayMusic;
 
-  PlayMusic.prototype.loadListeners = function(){
-    var _this = this;
+  PlayMusic.prototype.loadListeners = function(){};
 
-    $.subscribe('star.intersected', function(e, data){
+  PlayMusic.prototype.playStar = function(star){
+    var notesCount = this.notesCount;
+    var minVolume = this.opt.minVolume;
+    var maxVolume = this.opt.maxVolume;
+    
+    var mag = star.m;
+    var y = Math.min(star.y, 0.99);
+    var note = Math.floor(y * notesCount);
+    var volume = UTIL.lerp(minVolume, maxVolume, mag);
 
-    });
+    this.playNote(note, volume);
   };
 
   return PlayMusic;
@@ -1592,7 +1600,9 @@ var PlayStars = (function() {
       betaAngleRange: [-30, 30],
       alphaStart: 0,
       betaStart: -30,
-      crossedX: 0.5
+      crossedX: 0.15,
+      flashDuration: 2000,
+      flashMultiplier: 10
     };
     options = $.extend({}, defaults, options);
     Stars.call(this, options);
@@ -1618,7 +1628,19 @@ var PlayStars = (function() {
     var sequence = this.sequence;
     var data = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(sequence));
     window.open(data, "", "_blank");
-  }
+  };
+
+  PlayStars.prototype.flashStar = function(star){
+    var t = new Date();
+    var start = t.getTime();
+    var flashDuration = this.opt.flashDuration;
+
+    this.activeStars.push({
+      i: star.i,
+      start: start,
+      end: start + flashDuration
+    })
+  };
 
   PlayStars.prototype.loadCrossed = function(count){
     var crossed = new Float32Array(count);
@@ -1636,6 +1658,7 @@ var PlayStars = (function() {
     var positions = this.positions;
     var crossed = this.crossed || this.loadCrossed(starLen);
     var crossedX = this.crossedX;
+    var mags = this.mags;
     // reset the 2nd time around
     if (percent >= 0.5 && !this.resentCrossed) {
       this.resentCrossed = true;
@@ -1659,7 +1682,7 @@ var PlayStars = (function() {
         // it crossed
         else if (point.x > crossedX && c < 0) {
           this.crossed[i] = 1;
-          this.sequence.push([percent, i, point.y]);
+          this.sequence.push([percent, i, point.y, mags[i]]);
           $('.count').text(this.sequence.length);
         }
       }
@@ -1688,6 +1711,10 @@ var PlayStars = (function() {
     this.target.z = vector3[2];
     this.camera.lookAt(this.target);
 
+    if (!this.recordMode && this.activeStars.length) {
+      this.renderStars();
+    }
+
     if (this.recordMode) {
       this.recordSequence(percent);
     }
@@ -1697,25 +1724,31 @@ var PlayStars = (function() {
     this.renderer.render(this.scene, this.camera);
   };
 
-  PlayStars.prototype.renderStars = function(progress){
-    // var mult = this.opt.flashMultiplier;
-    //
-    // for (var i=this.activeStars.length-1; i>=0; i--){
-    //   var star = this.activeStars[i];
-    //   var si = star.i;
-    //   // flashing star
-    //   if (progress > star.start && progress < star.end) {
-    //     var p = UTIL.norm(progress, star.start, star.end);
-    //     p = UTIL.sin(p);
-    //     var flashAmount = UTIL.lerp(1, mult, p);
-    //     this.sizes[si] = this.originalSizes[si] * flashAmount;
-    //   // not flashing
-    //   } else {
-    //     this.sizes[si] = this.originalSizes[si];
-    //   }
-    // }
-    //
-    // this.geometry.attributes.size.needsUpdate = true;
+  PlayStars.prototype.renderStars = function(){
+    var t = new Date();
+    var ms = t.getTime();
+    var mult = this.opt.flashMultiplier;
+
+    for (var i=this.activeStars.length-1; i>=0; i--){
+      var star = this.activeStars[i];
+      var si = star.i;
+      // flashing star
+      if (ms > star.start && ms < star.end) {
+        var p = UTIL.norm(ms, star.start, star.end);
+        p = UTIL.sin(p);
+        var flashAmount = UTIL.lerp(1, mult, p);
+        this.sizes[si] = this.originalSizes[si] * flashAmount;
+      // not flashing
+      } else {
+        this.sizes[si] = this.originalSizes[si];
+      }
+      // remove inactive stars
+      if (ms >= star.end) {
+        this.activeStars.splice(i, 1);
+      }
+    }
+
+    this.geometry.attributes.size.needsUpdate = true;
   };
 
   return PlayStars;
@@ -1727,8 +1760,8 @@ var PlayApp = (function() {
   function PlayApp(options) {
     var defaults = {
       container: '#main',
-      totalMs: 240000, // 4 mins
-      sequence: 'data/seqeunce.json',
+      totalMs: 360000, // 6 mins
+      sequence: 'data/sequence.json',
       recordMode: false
     };
     this.opt = $.extend({}, defaults, options);
@@ -1740,6 +1773,7 @@ var PlayApp = (function() {
 
     this.recordMode = this.opt.recordMode;
     this.seqStart = 0;
+    this.lastActiveStar = -1;
 
     // wait for stars and music to be loaded
     this.queueSubscriptions(['sequence.loaded', 'stars.loaded', 'music.loaded', 'harmony.loaded']);
@@ -1760,11 +1794,12 @@ var PlayApp = (function() {
 
   PlayApp.prototype.loadSequence = function(file){
     var _this = this;
+
     this.sequence = [];
     $.getJSON(file, function(rows) {
       var sequence = [];
       $.each(rows, function(i, row){
-        sequence.push({ t: row[0], i: row[1], y: row[2] });
+        sequence.push({ t: row[0], i: row[1], y: row[2], m: row[3] });
       });
       _this.onLoadSequence(sequence);
     });
@@ -1772,9 +1807,10 @@ var PlayApp = (function() {
 
   PlayApp.prototype.onLoadSequence = function(sequence){
     this.sequence = sequence;
+    this.sequenceLen = sequence.length;
     $.publish('sequence.loaded', {
-      message: 'Loaded ' + sequence.length + ' steps in sequence.',
-      count: sequence.length
+      message: 'Loaded ' + this.sequenceLen + ' steps in sequence.',
+      count: this.sequenceLen
     });
   };
 
@@ -1812,13 +1848,14 @@ var PlayApp = (function() {
     var percent = elapsedMs / this.opt.totalMs;
     percent = UTIL.lim(percent, 0, 1);
 
-    this.stars.render(percent);
-    // this.music.render(percent);
     if (!this.recordMode) this.harmony.render(percent);
+    if (!this.recordMode) this.renderSequence(percent);
+    this.stars.render(percent);
 
     // restart loop
     if (percent >= 1) {
       this.startMs = t.getTime();
+      this.lastActiveStar = -1;
     }
 
     // continue if time left
@@ -1829,6 +1866,22 @@ var PlayApp = (function() {
     } else {
       console.log('Finished.')
       this.stars.downloadSequence();
+    }
+  };
+
+  PlayApp.prototype.renderSequence = function(percent){
+    var start = this.lastActiveStar + 1;
+    var sequence = this.sequence;
+    var sequenceLen = this.sequenceLen;
+
+    for (var i=start; i<sequenceLen; i++) {
+      var step = sequence[i];
+      // active star
+      if (percent >= step.t) {
+        this.stars.flashStar(step);
+        this.music.playStar(step);
+        this.lastActiveStar = i;
+      }
     }
   };
 

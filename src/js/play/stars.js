@@ -7,7 +7,9 @@ var PlayStars = (function() {
       betaAngleRange: [-30, 30],
       alphaStart: 0,
       betaStart: -30,
-      crossedX: 0.5
+      crossedX: 0.15,
+      flashDuration: 2000,
+      flashMultiplier: 10
     };
     options = $.extend({}, defaults, options);
     Stars.call(this, options);
@@ -33,7 +35,19 @@ var PlayStars = (function() {
     var sequence = this.sequence;
     var data = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(sequence));
     window.open(data, "", "_blank");
-  }
+  };
+
+  PlayStars.prototype.flashStar = function(star){
+    var t = new Date();
+    var start = t.getTime();
+    var flashDuration = this.opt.flashDuration;
+
+    this.activeStars.push({
+      i: star.i,
+      start: start,
+      end: start + flashDuration
+    })
+  };
 
   PlayStars.prototype.loadCrossed = function(count){
     var crossed = new Float32Array(count);
@@ -51,6 +65,7 @@ var PlayStars = (function() {
     var positions = this.positions;
     var crossed = this.crossed || this.loadCrossed(starLen);
     var crossedX = this.crossedX;
+    var mags = this.mags;
     // reset the 2nd time around
     if (percent >= 0.5 && !this.resentCrossed) {
       this.resentCrossed = true;
@@ -74,7 +89,7 @@ var PlayStars = (function() {
         // it crossed
         else if (point.x > crossedX && c < 0) {
           this.crossed[i] = 1;
-          this.sequence.push([percent, i, point.y]);
+          this.sequence.push([percent, i, point.y, mags[i]]);
           $('.count').text(this.sequence.length);
         }
       }
@@ -103,6 +118,10 @@ var PlayStars = (function() {
     this.target.z = vector3[2];
     this.camera.lookAt(this.target);
 
+    if (!this.recordMode && this.activeStars.length) {
+      this.renderStars();
+    }
+
     if (this.recordMode) {
       this.recordSequence(percent);
     }
@@ -112,25 +131,31 @@ var PlayStars = (function() {
     this.renderer.render(this.scene, this.camera);
   };
 
-  PlayStars.prototype.renderStars = function(progress){
-    // var mult = this.opt.flashMultiplier;
-    //
-    // for (var i=this.activeStars.length-1; i>=0; i--){
-    //   var star = this.activeStars[i];
-    //   var si = star.i;
-    //   // flashing star
-    //   if (progress > star.start && progress < star.end) {
-    //     var p = UTIL.norm(progress, star.start, star.end);
-    //     p = UTIL.sin(p);
-    //     var flashAmount = UTIL.lerp(1, mult, p);
-    //     this.sizes[si] = this.originalSizes[si] * flashAmount;
-    //   // not flashing
-    //   } else {
-    //     this.sizes[si] = this.originalSizes[si];
-    //   }
-    // }
-    //
-    // this.geometry.attributes.size.needsUpdate = true;
+  PlayStars.prototype.renderStars = function(){
+    var t = new Date();
+    var ms = t.getTime();
+    var mult = this.opt.flashMultiplier;
+
+    for (var i=this.activeStars.length-1; i>=0; i--){
+      var star = this.activeStars[i];
+      var si = star.i;
+      // flashing star
+      if (ms > star.start && ms < star.end) {
+        var p = UTIL.norm(ms, star.start, star.end);
+        p = UTIL.sin(p);
+        var flashAmount = UTIL.lerp(1, mult, p);
+        this.sizes[si] = this.originalSizes[si] * flashAmount;
+      // not flashing
+      } else {
+        this.sizes[si] = this.originalSizes[si];
+      }
+      // remove inactive stars
+      if (ms >= star.end) {
+        this.activeStars.splice(i, 1);
+      }
+    }
+
+    this.geometry.attributes.size.needsUpdate = true;
   };
 
   return PlayStars;

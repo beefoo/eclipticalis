@@ -32,8 +32,8 @@ var Music = (function() {
     this.activeNotes = [];
     this.queueReset = false;
     this.isMuted = false;
-    this.loadNotes();
     this.loadListeners();
+    this.loadNotes();
   };
 
   Music.prototype.loadListeners = function(){
