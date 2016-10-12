@@ -156,12 +156,19 @@ var Stars = (function() {
     this.renderer = renderer;
     this.starLen = starLen;
 
+    // init camera
+    var vector3 = UTIL.vector3(this.alpha, this.beta, this.opt.far);
+    this.target.x = vector3[0];
+    this.target.y = vector3[1];
+    this.target.z = vector3[2];
+    this.camera.lookAt(this.target);
+
     $.publish('stars.loaded', {
       message: 'Loaded ' + starLen + ' stars.',
       count: starLen,
       stars: stars
     });
-    setTimeout(function(){_this.onPanEnd();}, 1000);
+    // setTimeout(function(){_this.onPanEnd();}, 2000);
   };
 
   Stars.prototype.onResize = function(){

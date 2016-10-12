@@ -25,6 +25,7 @@ var App = (function() {
     var _this = this;
 
     this.seqStart = 0;
+    this.alignedFirst = false;
 
     // wait for stars and music to be loaded
     this.queueSubscriptions(['stars.loaded', 'music.loaded', 'harmony.loaded']);
@@ -78,12 +79,16 @@ var App = (function() {
       if (isOn) $link.text($link.attr('data-on'));
       else $link.text($link.attr('data-off'));
       $.publish('volume.toggle', isOn);
-    })
+    });
 
     // stars aligned
     $.subscribe('stars.aligned', function(e, data){
       var t = new Date();
       _this.seqStart = t.getTime();
+      if (!_this.alignedFirst) {
+        _this.alignedFirst = true;
+        _this.render();
+      }
     });
   };
 
@@ -106,10 +111,16 @@ var App = (function() {
   };
 
   App.prototype.onReady = function(){
+    var _this = this;
+    this.loadListeners();
     $('.loading').hide();
     $('.instructions').show().addClass('active');
-    this.loadListeners();
-    this.render();
+    this.onPanEnd();
+    // setTimeout(function(){
+    //   $('.loading').hide();
+    //   $('.instructions').show().addClass('active');
+    //   _this.onPanEnd();
+    // }, 1000);
   };
 
   App.prototype.queueSubscriptions = function(subs){

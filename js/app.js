@@ -1330,12 +1330,19 @@ var Stars = (function() {
     this.renderer = renderer;
     this.starLen = starLen;
 
+    // init camera
+    var vector3 = UTIL.vector3(this.alpha, this.beta, this.opt.far);
+    this.target.x = vector3[0];
+    this.target.y = vector3[1];
+    this.target.z = vector3[2];
+    this.camera.lookAt(this.target);
+
     $.publish('stars.loaded', {
       message: 'Loaded ' + starLen + ' stars.',
       count: starLen,
       stars: stars
     });
-    setTimeout(function(){_this.onPanEnd();}, 1000);
+    // setTimeout(function(){_this.onPanEnd();}, 2000);
   };
 
   Stars.prototype.onResize = function(){
@@ -1562,6 +1569,7 @@ var App = (function() {
     var _this = this;
 
     this.seqStart = 0;
+    this.alignedFirst = false;
 
     // wait for stars and music to be loaded
     this.queueSubscriptions(['stars.loaded', 'music.loaded', 'harmony.loaded']);
@@ -1615,12 +1623,16 @@ var App = (function() {
       if (isOn) $link.text($link.attr('data-on'));
       else $link.text($link.attr('data-off'));
       $.publish('volume.toggle', isOn);
-    })
+    });
 
     // stars aligned
     $.subscribe('stars.aligned', function(e, data){
       var t = new Date();
       _this.seqStart = t.getTime();
+      if (!_this.alignedFirst) {
+        _this.alignedFirst = true;
+        _this.render();
+      }
     });
   };
 
@@ -1643,10 +1655,16 @@ var App = (function() {
   };
 
   App.prototype.onReady = function(){
+    var _this = this;
+    this.loadListeners();
     $('.loading').hide();
     $('.instructions').show().addClass('active');
-    this.loadListeners();
-    this.render();
+    this.onPanEnd();
+    // setTimeout(function(){
+    //   $('.loading').hide();
+    //   $('.instructions').show().addClass('active');
+    //   _this.onPanEnd();
+    // }, 1000);
   };
 
   App.prototype.queueSubscriptions = function(subs){
